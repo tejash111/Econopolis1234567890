@@ -211,7 +211,7 @@ Coin IDs are resolved using `/coins/list` before requesting `/coins/markets`. On
 
 The connection uses `https://api.coingecko.com/api/v3` and only the `x-cg-demo-api-key` HTTPS header. The key is stored in the device Keychain, never in source, URLs, UserDefaults, simulation snapshots or exports. Pro keys are not supported by this Demo configuration. Market observations do not alter the offline economic model or its deterministic branches.
 
-See [Live Crypto setup and verification](docs/LIVE_CRYPTO.md). [Data provided by CoinGecko](https://www.coingecko.com/en/api).
+Authenticated Demo catalog and price requests were verified on the iPhone simulator (HTTP 200 for both endpoints). Incomplete catalog listings are skipped without blocking valid coins. See [Live Crypto setup and verification](docs/LIVE_CRYPTO.md). [Data provided by CoinGecko](https://www.coingecko.com/en/api).
 
 ## The Great Bank Run live demo
 

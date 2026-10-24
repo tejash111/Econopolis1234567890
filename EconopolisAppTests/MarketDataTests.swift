@@ -58,6 +58,13 @@ private actor SuspendedDeletingCredentials: MarketCredentialStore {
 }
 @Suite("Read-only CoinGecko Demo market data", .serialized)
 struct MarketDataTests {
+  @Test func incompleteCatalogListingsDoNotBlockValidCoins() async throws {
+    let data = Data(
+      #"[{"id":"bitcoin","symbol":"btc","name":"Bitcoin"},{"id":"no-ticker","symbol":"","name":"Incomplete"},{"id":"no-name","symbol":"n","name":"  "}]"#
+        .utf8)
+    let client = CoinGeckoClient(transport: FixtureTransport([response(data)]))
+    #expect(try await client.coins(key: fixtureKey).map(\.id) == ["bitcoin"])
+  }
   @Test func resolvedIDsBatchGETHeaderAndDecimalParsing() async throws {
     let transport = FixtureTransport([response(fixtureCoins), response(fixtureQuote)])
     let client = CoinGeckoClient(transport: transport)

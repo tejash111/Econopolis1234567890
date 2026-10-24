@@ -84,10 +84,15 @@ actor CoinGeckoClient: CryptoMarketDataAPI {
   func coins(key: String) async throws -> [CryptoCoin] {
     let data = try await get("coins/list", key: key, query: [])
     guard let coins = try? JSONDecoder().decode([CryptoCoin].self, from: data),
-      coins.allSatisfy({ Self.validID($0.id) && !$0.name.isEmpty && !$0.symbol.isEmpty }),
+      coins.allSatisfy({ Self.validID($0.id) }),
       Set(coins.map(\.id)).count == coins.count
     else { throw CryptoMarketError.invalidResponse }
-    return coins.sorted { $0.id < $1.id }
+    // The production catalog includes incomplete listings with empty ticker metadata.
+    // Omit those listings rather than losing access to the entire valid catalog.
+    return coins.filter {
+      !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        && !$0.symbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }.sorted { $0.id < $1.id }
   }
   func quotes(ids: [String], key: String) async throws -> [CryptoQuote] {
     guard !ids.isEmpty, ids.count <= 8, Set(ids).count == ids.count,

@@ -132,3 +132,21 @@ One XCTest UI case actually opens Economy → Live Crypto → secure key entry, 
 Initial `.build/CoinGeckoAcceptance.xcresult` failed one of 11 hosted cases (two assertions): automatic snake-case decoding omitted digit-containing `24h` and `7d` optional fields. Explicit CodingKeys fixed it. The initial UI case passed. Xcode's diagnostic collector lingered after completion; its own simctl diagnose helper was terminated to finalize that failed bundle. The clean rerun above completed normally.
 
 **Unverified:** authenticated production responses, real-data detail/chart interaction, physical iPhone, iOS 18 runtime, FPS/energy and full accessibility audit. Supplied chat credentials are never embedded in source or committed; connection requires secure in-app key entry. No app distribution/signing/TestFlight claim. Generic Release compilation is not a signed device archive.
+
+### Production API diagnosis and catalog fix — 2026-10-24
+
+Authenticated production requests were executed from the booted iPhone 17 simulator using the existing Demo credential read directly from the app's Keychain. The key was not printed, placed in a URL, or added to project files. The diagnostic used the actual CoinGeckoClient and URLSessionMarketTransport, with only HTTP statuses and aggregate validation counts printed.
+
+- Initial `GET /api/v3/coins/list`: **HTTP 200**, 1,485,020 bytes, 22,461 catalog entries, no invalid or duplicate IDs, four empty ticker symbols. This exposed an overly strict all-catalog validation rule; the API key was valid.
+- Fix: omit listings with blank name/ticker metadata while preserving valid ID and duplicate validation. Do not fabricate metadata or prices.
+- Repeat authenticated `coins/list`: **HTTP 200**. Follow-up `coins/markets` using three IDs resolved from that catalog: **HTTP 200**, 11,830 bytes, **three observations decoded and three prices available**. No live price amounts or secrets are stored in this report.
+- Regression added: a valid Bitcoin listing remains available when other catalog entries contain blank metadata.
+
+Executed:
+
+```sh
+xcodebuild -quiet -project Econopolis.xcodeproj -scheme Econopolis -configuration Debug -derivedDataPath .build/ios -destination 'platform=iOS Simulator,id=BD53D5D9-F086-4961-AE37-EAE90C04684E' -parallel-testing-enabled NO -only-testing:EconopolisAppTests/MarketDataTests -resultBundlePath .build/CoinGeckoCatalogFix.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+xcodebuild -quiet -project Econopolis.xcodeproj -scheme Econopolis -configuration Release -derivedDataPath .build/coingecko-release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+```
+
+Both commands exited **0**. Regression result: **12 market-data tests passed, zero failures/skips**, no runtime warnings in the result summary (66.060 seconds test operation). Existing RealityKit simulator shader diagnostics remain visible in app stdout. The updated app was installed and relaunched successfully (PID 48746). The prior no-key UI check remains valid; authenticated full-screen/chart interaction and physical-device checks were not newly automated. Earlier authenticated-access limitations above describe the initial implementation and are superseded by these successful API calls.

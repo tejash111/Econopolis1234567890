@@ -13,7 +13,7 @@ Demo is explicit: `https://api.coingecko.com/api/v3`, header `x-cg-demo-api-key`
 
 ## Actual data flow
 
-- GET `coins/list`: provider catalog for ID resolution. Loaded once per screen-model lifetime/connection.
+- GET `coins/list`: provider catalog for ID resolution. Loaded once per screen-model lifetime/connection. Incomplete listings with blank names/tickers are omitted; valid listings remain available.
 - GET `coins/markets?vs_currency=usd&ids=...&sparkline=true&precision=full`: one batch for all watched IDs, once per minute while the screen is active.
 - Prices and monetary fields decode as Decimal. Missing fields stay unavailable, empty market results never become fake prices. Duplicate/mismatched IDs, negative monetary values and invalid chart samples are rejected.
 - Provider ISO8601 `last_updated` is distinct from app receipt time. Older than 180 seconds, missing or implausibly future timestamps are labeled stale. Paused or failed requests also identify retained observations.
@@ -33,7 +33,7 @@ The app is a periodically refreshed market reference, not a trading terminal or 
 
 ## Verification
 
-See the dated CoinGecko section of TEST_REPORT.md for real results. Fixture data exists only in test targets. Authenticated production responses must not be claimed until a key is entered securely on a running device and a successful response observed. No key is embedded in this repository.
+See the dated CoinGecko section of TEST_REPORT.md for real results. Fixture data exists only in test targets. Authenticated production catalog and market requests were verified on 2026-10-24 from the iPhone simulator using the saved Keychain credential: HTTP 200 for both endpoints, three requested observations and three available prices. A production catalog regression (four empty ticker symbols) was fixed by omitting incomplete listings. No key is embedded in this repository.
 
 ## References
 
