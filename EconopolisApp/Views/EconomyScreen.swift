@@ -5,6 +5,7 @@ import SwiftUI
 struct EconomyScreen: View {
   @Bindable var model: SimulationViewModel
   let select: (String) -> Void
+  @Environment(\.dynamicTypeSize) private var typeSize
   @State private var metric: EconomyChartMetric = .spending
   @State private var range = 30
   @State private var district = ""
@@ -13,6 +14,23 @@ struct EconomyScreen: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 20) {
         WorldPicker(model: model)
+        NavigationLink {
+          LiveStocksScreen()
+        } label: {
+          HStack(spacing: 12) {
+            Image(systemName: "chart.line.uptrend.xyaxis").font(.title3).foregroundStyle(.blue)
+            VStack(alignment: .leading, spacing: 3) {
+              Text("Live Stocks").font(.headline).foregroundStyle(.primary)
+              Text("Binance market data · optional connection").font(.caption).foregroundStyle(
+                .secondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(
+              .tertiary)
+          }.padding(16).background(Color.cardSurface, in: RoundedRectangle(cornerRadius: 16))
+            .contentShape(Rectangle())
+        }.buttonStyle(.plain).accessibilityIdentifier("liveStocks")
+
         if let update = model.update {
           HStack(alignment: .firstTextBaseline) {
             Text("The pulse of your city").font(.title2.bold())
@@ -20,7 +38,11 @@ struct EconomyScreen: View {
             Text("Day \(update.metrics.day)").font(.caption.monospacedDigit()).foregroundStyle(
               .secondary)
           }
-          LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+          LazyVGrid(
+            columns: typeSize.isAccessibilitySize
+              ? [GridItem(.flexible())] : [GridItem(.flexible()), GridItem(.flexible())],
+            spacing: 10
+          ) {
             MetricCard(
               title: "Spending today", value: compactMoney(update.metrics.consumerSpending))
             MetricCard(title: "Unemployment", value: percent(update.metrics.unemploymentPercentage))
@@ -64,15 +86,15 @@ struct EconomyScreen: View {
               Chart(points) { point in
                 AreaMark(
                   x: .value("Simulation day", point.day), y: .value(metric.rawValue, point.value)
-                ).foregroundStyle(.cyan.opacity(0.08))
+                ).foregroundStyle(.blue.opacity(0.08))
                 LineMark(
                   x: .value("Simulation day", point.day), y: .value(metric.rawValue, point.value)
-                ).foregroundStyle(.cyan).lineStyle(StrokeStyle(lineWidth: 2))
+                ).foregroundStyle(.blue).lineStyle(StrokeStyle(lineWidth: 2))
               }.frame(height: 190).chartXAxisLabel("Simulation day").chartYAxisLabel(
                 metric.monetary ? "Fictional USD" : metric.rawValue
               ).accessibilityLabel("\(metric.rawValue), \(points.count) actual recorded days")
             }
-          }.padding(14).background(Color.cardSurface, in: RoundedRectangle(cornerRadius: 20))
+          }.padding(14).background(Color.cardSurface, in: RoundedRectangle(cornerRadius: 16))
           TimelinePanel(model: model)
           if model.demoStage >= 2 { ComparisonPanel(model: model) }
           Text("District spending today").font(.title3.bold())
@@ -83,7 +105,7 @@ struct EconomyScreen: View {
                 "District",
                 update.districts.first { $0.id == activity.id }?.name.components(separatedBy: " ")
                   .first ?? activity.id)
-            ).foregroundStyle(.cyan)
+            ).foregroundStyle(.blue)
           }.frame(height: 180).accessibilityLabel(
             "Actual current-day consumer spending by seller district")
           ForEach(update.districts) { district in
@@ -106,26 +128,28 @@ struct EconomyScreen: View {
             "Recorded economic activity and monetary proxies, not GDP or market forecasts. Data is never interpolated to invent historical values."
           ).font(.caption).foregroundStyle(.secondary)
         }
-      }.padding(16)
-    }.background(Color.cityNight).navigationTitle("Economy").navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .topBarTrailing) {
-          Menu {
-            ForEach(DirectoryKind.allCases) { kind in
-              NavigationLink(kind.rawValue) { directory(kind) }
-            }
-          } label: {
-            Image(systemName: "ellipsis.circle")
-          }.accessibilityLabel("Economy directories and settings")
-        }
+      }.padding(20)
+    }.background(Color.appBackground).navigationTitle("Economy").navigationBarTitleDisplayMode(
+      .large
+    )
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        Menu {
+          ForEach(DirectoryKind.allCases) { kind in
+            NavigationLink(kind.rawValue) { directory(kind) }
+          }
+        } label: {
+          Image(systemName: "ellipsis.circle")
+        }.accessibilityLabel("Economy directories and settings")
       }
-      .task(
-        id:
-          "\(model.world)-\(model.update?.seed ?? 0)-\(model.update?.metrics.day ?? 0)-\(metric)-\(range)-\(district)"
-      ) {
-        points = ChartProjection.samples(
-          history: model.update?.history ?? [], metric: metric, range: range, district: district)
-      }
+    }
+    .task(
+      id:
+        "\(model.world)-\(model.update?.seed ?? 0)-\(model.update?.metrics.day ?? 0)-\(metric)-\(range)-\(district)"
+    ) {
+      points = ChartProjection.samples(
+        history: model.update?.history ?? [], metric: metric, range: range, district: district)
+    }
   }
   private var householdStress: Double {
     let residents = model.entities?.citizens ?? []

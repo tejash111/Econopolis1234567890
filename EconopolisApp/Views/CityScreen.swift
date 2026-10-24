@@ -12,7 +12,7 @@ struct CityScreen: View {
   @State private var activity = false
   var body: some View {
     ZStack {
-      Color.cityNight.ignoresSafeArea()
+      Color.appBackground.ignoresSafeArea()
       if let city = model.city {
         if model.use2D {
           IsometricCityView(snapshot: city, preferences: model.preferences, onSelect: select)
@@ -21,11 +21,11 @@ struct CityScreen: View {
             snapshot: city, preferences: model.preferences, reducedMotion: reduceMotion,
             selection: model.selectedEntity, onSelect: select)
         }
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
           HStack {
             VStack(alignment: .leading, spacing: 3) {
-              Text("ECONOPOLIS").font(.headline.weight(.heavy)).tracking(2)
-              Text("A living financial city").font(.caption).foregroundStyle(.secondary)
+              Text("Econopolis").font(.title2.weight(.semibold))
+              Text("Your living economy").font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
             VStack(alignment: .trailing) {
@@ -123,7 +123,8 @@ struct CityScreen: View {
             Text("Activity").font(.subheadline)
             Image(systemName: "chevron.up")
           }.padding(.horizontal, 12).frame(minHeight: 44).contentShape(Rectangle())
-        }.buttonStyle(.plain)
+        }.buttonStyle(.plain).padding(.vertical, 8)
+          .background(Color.cardSurface, in: RoundedRectangle(cornerRadius: 16))
         PlaybackBar(model: model)
       }.padding(.horizontal, 14).padding(.bottom, 5)
     }

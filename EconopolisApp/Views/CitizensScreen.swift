@@ -38,9 +38,9 @@ struct CitizensScreen: View {
             select(citizen.id)
           } label: {
             HStack(spacing: 12) {
-              Text(String(citizen.name.prefix(1))).font(.headline).foregroundStyle(.cyan).frame(
+              Text(String(citizen.name.prefix(1))).font(.headline).foregroundStyle(.blue).frame(
                 width: 38, height: 38
-              ).background(.cyan.opacity(0.1), in: Circle())
+              ).background(.blue.opacity(0.1), in: Circle())
               VStack(alignment: .leading, spacing: 4) {
                 Text(citizen.name).font(.subheadline.bold())
                 Text(citizen.archetype + " · " + citizen.employment.rawValue).font(.caption)
@@ -57,7 +57,7 @@ struct CitizensScreen: View {
           }.buttonStyle(.plain).accessibilityElement(children: .combine)
         }
       }
-    }.scrollContentBackground(.hidden).background(Color.cityNight).navigationTitle("Citizens")
+    }.scrollContentBackground(.hidden).background(Color.appBackground).navigationTitle("Citizens")
       .searchable(
         text: $filter.query, placement: .navigationBarDrawer(displayMode: .always),
         prompt: "Name or citizen ID"

@@ -6,36 +6,47 @@ struct CrisisScreen: View {
   @State private var crisis: CrisisPlan?
   @State private var policy: PolicyPlan?
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 20) {
-        Text("One economy.\nTwo possible futures.").font(.title.bold())
-        Text(
-          "Crises affect real payments, jobs, credit and spending. Policies are previews until you confirm."
-        ).font(.subheadline).foregroundStyle(.secondary)
+    List {
+      Section {
         demo
+      } footer: {
+        Text(
+          "Explore the same crisis with and without a policy response. Every outcome is calculated by the simulation."
+        )
+      }
+      Section {
         WorldPicker(model: model)
-        if model.isBusy { ProgressView("Computing both economies…").font(.subheadline) }
+        if model.isBusy { ProgressView("Computing both economies…") }
+      }
+      Section("Timeline and outcomes") {
         TimelinePanel(model: model)
         if model.demoStage >= 2 { ComparisonPanel(model: model) }
-        Text("Choose a crisis").font(.title3.bold())
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-          ForEach(CrisisKind.allCases) { kind in
-            Button {
-              crisis = CrisisPlan(
-                id:
-                  "crisis-\((model.update?.metrics.day ?? 0) + 1)-\(model.update?.scheduledEvents.count ?? 0)",
-                kind: kind, targetID: kind == .bankRun ? model.update?.banks.first?.id : nil,
-                startDay: (model.update?.metrics.day ?? 0) + 1)
-            } label: {
-              VStack(alignment: .leading, spacing: 12) {
-                Image(systemName: symbol(kind)).font(.title2).foregroundStyle(.orange)
-                Text(kind.rawValue).font(.subheadline.bold()).multilineTextAlignment(.leading)
-              }.frame(maxWidth: .infinity, minHeight: 86, alignment: .leading).padding(14)
-                .background(Color.cardSurface, in: RoundedRectangle(cornerRadius: 18))
-            }.buttonStyle(.plain).disabled(model.isBusy)
-          }
+      }.listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+      Section("Choose a crisis") {
+        ForEach(CrisisKind.allCases) { kind in
+          Button {
+            crisis = CrisisPlan(
+              id:
+                "crisis-\((model.update?.metrics.day ?? 0) + 1)-\(model.update?.scheduledEvents.count ?? 0)",
+              kind: kind, targetID: kind == .bankRun ? model.update?.banks.first?.id : nil,
+              startDay: (model.update?.metrics.day ?? 0) + 1)
+          } label: {
+            HStack(spacing: 12) {
+              Image(systemName: symbol(kind)).font(.body.weight(.semibold))
+                .foregroundStyle(.blue).frame(width: 34, height: 34)
+                .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+              VStack(alignment: .leading, spacing: 3) {
+                Text(kind.rawValue).font(.body).foregroundStyle(.primary)
+                Text(subtitle(kind)).font(.caption).foregroundStyle(.secondary)
+              }
+              Spacer(minLength: 8)
+              Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(
+                .tertiary)
+            }.frame(minHeight: 48).contentShape(Rectangle())
+          }.buttonStyle(.plain).disabled(model.isBusy).accessibilityLabel(kind.rawValue)
         }
-        Text("Intervene in World B").font(.title3.bold())
+      }
+      Section {
         ForEach(PolicyKind.allCases) { kind in
           Button {
             policy = PolicyPlan(
@@ -43,48 +54,75 @@ struct CrisisScreen: View {
                 "policy-\((model.branches?.b.metrics.day ?? 0) + 1)-\(model.branches?.b.scheduledEvents.count ?? 0)",
               kind: kind,
               targetID: kind == .liquidity || kind == .guarantee
-                ? model.update?.banks.first?.id : nil, day: (model.branches?.b.metrics.day ?? 0) + 1
-            )
+                ? model.update?.banks.first?.id : nil,
+              day: (model.branches?.b.metrics.day ?? 0) + 1)
           } label: {
-            HStack {
-              Label(kind.rawValue, systemImage: "building.columns")
+            HStack(spacing: 12) {
+              Image(systemName: "building.columns").foregroundStyle(.blue).frame(
+                width: 34, height: 34
+              )
+              .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+              Text(kind.rawValue).foregroundStyle(.primary)
               Spacer()
-              Image(systemName: "chevron.right")
-            }.frame(minHeight: 48).contentShape(Rectangle())
+              Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(
+                .tertiary)
+            }.frame(minHeight: 44).contentShape(Rectangle())
           }.buttonStyle(.plain).disabled(model.isBusy)
         }
-        if let events = model.update?.scheduledEvents, !events.isEmpty {
-          Text("Scheduled commands").font(.headline)
+      } header: {
+        Text("Intervene in World B")
+      } footer: {
+        Text(
+          "Review parameters and funding before confirming. Opening a preview does not change the economy."
+        )
+      }
+      if let events = model.update?.scheduledEvents, !events.isEmpty {
+        Section("Scheduled commands") {
           ForEach(events) { event in
-            Text("Day \(event.day) · \(event.id)").font(.caption).foregroundStyle(.secondary)
+            LabeledContent("Day \(event.day)", value: event.id).font(.subheadline)
           }
         }
-        if let records = model.update?.crisis?.records.suffix(12).reversed(), !records.isEmpty {
-          Text("Recorded consequences").font(.title3.bold())
+      }
+      if let records = model.update?.crisis?.records.suffix(12).reversed(), !records.isEmpty {
+        Section("Recorded consequences") {
           ForEach(Array(records)) { item in
-            VStack(alignment: .leading, spacing: 4) {
-              Text(item.message).font(.subheadline)
+            VStack(alignment: .leading, spacing: 5) {
+              Text(item.message).font(.body)
               Text(
                 "Day \(item.day) · \(item.entityID)"
                   + (item.transactionID.map { " · transaction #\($0)" } ?? "")
-              ).font(.caption).foregroundStyle(.secondary)
-            }.padding(.vertical, 5)
+              )
+              .font(.caption).foregroundStyle(.secondary)
+            }.padding(.vertical, 4)
           }
         }
-        Text(
-          "A synthetic mechanism model, not a real-world forecast. Settlement resolution is distinct from insolvency. A rescue may improve settlement capacity without reducing debt or eliminating fiscal risk."
-        ).font(.caption).foregroundStyle(.secondary)
-      }.padding(18)
-    }.background(Color.cityNight).navigationTitle("Crisis Lab").navigationBarTitleDisplayMode(
-      .inline
-    )
-    .sheet(item: $crisis) { plan in CrisisEditor(model: model, initial: plan) }
-    .sheet(item: $policy) { plan in PolicyEditor(model: model, initial: plan) }
+      }
+      Section {
+        DisclosureGroup("About this model") {
+          Text(
+            "A synthetic mechanism model, not a real-world forecast. Settlement resolution is distinct from insolvency. A rescue may improve settlement capacity without reducing debt or eliminating fiscal risk."
+          )
+          .font(.subheadline).foregroundStyle(.secondary)
+        }
+      }
+    }.listStyle(.insetGrouped).navigationTitle("Crisis Lab").navigationBarTitleDisplayMode(.large)
+      .sheet(item: $crisis) { CrisisEditor(model: model, initial: $0) }
+      .sheet(item: $policy) { PolicyEditor(model: model, initial: $0) }
+  }
+  private func subtitle(_ kind: CrisisKind) -> String {
+    switch kind {
+    case .bankRun: "Withdrawals and payment pressure"
+    case .interestRate: "Variable-rate borrowing costs"
+    case .layoffs: "Employment and household income"
+    case .recession: "Confidence and consumer demand"
+    case .creditCrunch: "Access to new borrowing"
+    case .paymentOutage: "Payment delays and recovery"
+    }
   }
   private var demo: some View {
     VStack(alignment: .leading, spacing: 14) {
-      Label("THE GREAT BANK RUN", systemImage: "play.rectangle.fill").font(.headline)
-        .foregroundStyle(.cyan)
+      Label("The Great Bank Run", systemImage: "play.rectangle.fill").font(.headline)
+        .foregroundStyle(.blue)
       Text(
         [
           "Start with a repeatable, living economy.",
@@ -93,7 +131,7 @@ struct CrisisScreen: View {
           "World B is back at the pre-crisis snapshot. World A retains its recorded future.",
           "Compare the same crisis with and without a repayable central-bank advance.",
         ][min(4, model.demoStage)]
-      ).font(.subheadline)
+      ).font(.subheadline).foregroundStyle(.secondary)
       Button {
         if model.demoStage == 0 { model.startDemo() } else { model.nextDemo() }
       } label: {
@@ -103,9 +141,9 @@ struct CrisisScreen: View {
             "Apply liquidity & replay", "Restart live demo",
           ][min(4, model.demoStage)]
         ).font(.headline).frame(maxWidth: .infinity, minHeight: 44)
-      }.buttonStyle(.borderedProminent).tint(.cyan).disabled(model.isBusy).accessibilityIdentifier(
+      }.buttonStyle(.borderedProminent).tint(.blue).disabled(model.isBusy).accessibilityIdentifier(
         "demoNext")
-    }.padding(18).economicGlass()
+    }.padding(.vertical, 6)
   }
   private func symbol(_ kind: CrisisKind) -> String {
     switch kind {

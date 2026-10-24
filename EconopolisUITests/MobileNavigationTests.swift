@@ -14,10 +14,10 @@ final class MobileNavigationTests: XCTestCase {
     app.buttons["playPause"].tap()
     XCTAssertTrue(app.staticTexts["DAY 2"].waitForExistence(timeout: 10))
     app.buttons["playPause"].tap()
-    app.tabBars.buttons["Economy"].tap()
+    selectNativeTab("Economy", in: app)
     XCTAssertTrue(app.staticTexts["The pulse of your city"].waitForExistence(timeout: 10))
     app.swipeUp()
-    app.tabBars.buttons["Citizens"].tap()
+    selectNativeTab("Citizens", in: app)
     XCTAssertTrue(app.searchFields.firstMatch.waitForExistence(timeout: 10))
     app.searchFields.firstMatch.tap()
     app.searchFields.firstMatch.typeText("Alex\n")
@@ -27,13 +27,13 @@ final class MobileNavigationTests: XCTestCase {
     XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
     app.buttons["Done"].tap()
     if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() }
-    app.tabBars.buttons["AI Economist"].tap()
+    selectNativeTab("AI Economist", in: app)
     app.swipeUp()
     app.buttons["Show me businesses at risk"].tap()
     XCTAssertTrue(
       app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'cash-flow measure'")).firstMatch
         .waitForExistence(timeout: 10))
-    app.tabBars.buttons["Crisis Lab"].tap()
+    selectNativeTab("Crisis Lab", in: app)
     let policy = app.buttons["Policy Rate"]
     for _ in 0..<5 where !policy.isHittable { app.swipeUp() }
     XCTAssertTrue(policy.waitForExistence(timeout: 10))
@@ -67,7 +67,7 @@ final class MobileNavigationTests: XCTestCase {
     fallback.name = "Isometric fallback"
     fallback.lifetime = .keepAlways
     add(fallback)
-    app.tabBars.buttons["Economy"].tap()
+    selectNativeTab("Economy", in: app)
     XCUIDevice.shared.orientation = .landscapeLeft
     let landscapeReady = XCTNSPredicateExpectation(
       predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)

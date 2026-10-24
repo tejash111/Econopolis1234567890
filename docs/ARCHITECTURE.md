@@ -27,3 +27,7 @@ Charts are derived from recorded history, never generated from the current value
 The Xcode hosted test target references shared core test sources directly. Keep static linkage and explicit framework runpaths; a second dynamically linked copy previously prevented standalone launch.
 
 Further details: [iOS UI](IOS_UI_ARCHITECTURE.md), [economic model](ECONOMIC_MODEL.md), [crises](CRISIS_ENGINE.md), [time travel](TIME_TRAVEL.md), [AI](AI_ECONOMIST.md).
+
+## Optional external market reference
+
+`EconopolisApp/MarketData` contains a read-only Binance URLSession client actor, Keychain actor and main-actor polling model. `LiveStocksScreen` is reached from Economy. It is deliberately outside `EconopolisCore`; external stock quotes never affect simulated balances, metrics, seeds or branches. The only provider methods are GET exchangeInfo and quote. The core/demo remain offline; the optional screen requires an API key/network and signed-app Keychain access. See LIVE_STOCKS.md.

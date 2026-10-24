@@ -24,11 +24,11 @@ struct RealityCityView: UIViewRepresentable {
   }
   func updateUIView(_ view: ARView, context: Context) {
     view.environment.background = .color(
-      scheme == .dark
-        ? UIColor(red: 0.035, green: 0.055, blue: 0.08, alpha: 1)
-        : UIColor(red: 0.85, green: 0.88, blue: 0.9, alpha: 1))
+      UIColor.systemGroupedBackground.resolvedColor(
+        with: UITraitCollection(userInterfaceStyle: scheme == .dark ? .dark : .light)))
     context.coordinator.onSelect = onSelect
-    context.coordinator.update(snapshot, selection: selection, reduceMotion: reducedMotion)
+    context.coordinator.update(
+      snapshot, selection: selection, reduceMotion: reducedMotion, dark: scheme == .dark)
   }
   static func dismantleUIView(_ view: ARView, coordinator: Coordinator) {
     coordinator.cleanup()
@@ -52,6 +52,8 @@ struct RealityCityView: UIViewRepresentable {
     private var cleanupTask: Task<Void, Never>?
     private var current: CityPresentationSnapshot?
     private var lastBranch: String?
+    private var darkAppearance = false
+    private var appearanceInitialized = false
     init(preferences: AppPreferences, onSelect: @escaping (String) -> Void) {
       self.preferences = preferences
       self.onSelect = onSelect
@@ -85,18 +87,31 @@ struct RealityCityView: UIViewRepresentable {
         "Financial city. Drag to orbit, two fingers to pan, pinch to zoom, double tap to focus. Use Search city for accessible institution selection."
       positionCamera()
     }
-    private func environment(_ snapshot: CityPresentationSnapshot) {
+    private func districtColor(_ index: Int) -> UIColor {
+      if darkAppearance { return resources.colors[index % 6].withBrightness(0.38) }
+      let base = resources.colors[index % 6]
+      var red: CGFloat = 0
+      var green: CGFloat = 0
+      var blue: CGFloat = 0
+      var alpha: CGFloat = 0
+      base.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+      return UIColor(
+        red: 0.82 + red * 0.14, green: 0.82 + green * 0.14, blue: 0.82 + blue * 0.14, alpha: 1)
+    }
+    private func environment(
+      _ snapshot: CityPresentationSnapshot
+    ) {
       terrain.children.removeAll()
       tiles.removeAll()
       terrain.addChild(
         resources.block(
           [27, 0.28, 18], [0, -0.25, 0],
-          color: UIColor(red: 0.11, green: 0.15, blue: 0.19, alpha: 1)))
+          color: darkAppearance ? UIColor(white: 0.13, alpha: 1) : UIColor(white: 0.83, alpha: 1)))
       for (i, district) in snapshot.districts.enumerated() {
         let center = CityLayout.center(i)
         let tile = resources.block(
           [7.7, 0.08, 7.5], center + [0, -0.04, 0],
-          color: resources.colors[i % 6].withBrightness(0.38), name: district.id)
+          color: districtColor(i), name: district.id)
         tile.collision = CollisionComponent(shapes: [.generateBox(size: [1, 1, 1])])
         tiles.append(tile)
         terrain.addChild(tile)
@@ -127,9 +142,17 @@ struct RealityCityView: UIViewRepresentable {
           [7.3, 0.035, 1.0], CityLayout.center(2) + [0, 0.005, 3.2],
           color: UIColor(red: 0.07, green: 0.28, blue: 0.4, alpha: 1)))
     }
-    func update(_ snapshot: CityPresentationSnapshot, selection: String?, reduceMotion: Bool) {
+    func update(
+      _ snapshot: CityPresentationSnapshot, selection: String?, reduceMotion: Bool, dark: Bool
+    ) {
       let start = ContinuousClock.now
       current = snapshot
+      if !appearanceInitialized || darkAppearance != dark {
+        darkAppearance = dark
+        appearanceInitialized = true
+        if lastIdentity == snapshot.identity { environment(snapshot) }
+        lastDay = -1
+      }
       if lastBranch != snapshot.branch.rawValue {
         flows.children.removeAll()
         cleanupTask?.cancel()
@@ -184,10 +207,11 @@ struct RealityCityView: UIViewRepresentable {
           let score = snapshot.heat(preferences.heatmap, district: i)
           let color: UIColor =
             preferences.heatmap == .off
-            ? resources.colors[i % 6].withBrightness(0.38)
+            ? districtColor(i)
             : (score < 3_500 ? .systemGreen : (score < 7_000 ? .systemOrange : .systemRed))
           tile.model?.materials = [
-            resources.material(color.withBrightness(preferences.heatmap == .off ? 1 : 0.6))
+            resources.material(
+              color.withBrightness(preferences.heatmap == .off ? 1 : (darkAppearance ? 0.6 : 1)))
           ]
         }
         lastHeatmap = preferences.heatmap

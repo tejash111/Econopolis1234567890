@@ -16,65 +16,83 @@ struct EconomistScreen: View {
     "Show me businesses at risk",
   ]
   var body: some View {
-    ScrollView {
-      VStack(alignment: .leading, spacing: 20) {
-        WorldPicker(model: model)
-        HStack {
-          Image(systemName: "sparkles").font(.title2).foregroundStyle(.purple)
-          Text("Understand. Explore. Decide.").font(.title2.bold())
+    ScrollViewReader { proxy in
+      List {
+        Section {
+          WorldPicker(model: model)
         }
-        Text("Offline Economist").font(.caption.bold()).foregroundStyle(.purple)
-        Text(
-          "Questions use recorded evidence. Scenario commands open an editable preview and require confirmation. The Swift engine computes all outcomes."
-        ).font(.subheadline).foregroundStyle(.secondary)
-        HStack(alignment: .bottom) {
-          TextField("Ask about your economy", text: $question, axis: .vertical).lineLimit(1...4)
-            .submitLabel(.send).onSubmit(answer).padding(14).background(
-              Color.cardSurface, in: RoundedRectangle(cornerRadius: 16)
-            ).accessibilityLabel("Question for the economic assistant")
-          Button(action: answer) { Image(systemName: "arrow.up").frame(width: 44, height: 44) }
-            .buttonStyle(.borderedProminent).tint(.purple).disabled(
-              question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.isBusy
-                || isParsing
-            ).accessibilityLabel("Ask economist")
+        Section {
+          Label("Offline Economist", systemImage: "sparkles").font(.headline).foregroundStyle(
+            .primary)
+          Text(
+            "Ask about recorded results, or describe a scenario to preview it. The simulation calculates every financial outcome."
+          )
+          .font(.subheadline).foregroundStyle(.secondary)
+          HStack(alignment: .bottom, spacing: 12) {
+            TextField("Ask about your economy", text: $question, axis: .vertical)
+              .font(.body).lineLimit(1...5).submitLabel(.send).onSubmit(answer)
+              .frame(minHeight: 44).accessibilityLabel("Question for the economic assistant")
+            Button(action: answer) {
+              Image(systemName: "arrow.up").font(.body.weight(.semibold)).frame(
+                width: 44, height: 44)
+            }.buttonStyle(.borderedProminent).buttonBorderShape(.circle)
+              .disabled(
+                question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.isBusy
+                  || isParsing
+              )
+              .accessibilityLabel("Ask economist")
+          }
+          if isParsing { ProgressView("Reading your request…") }
+        } footer: {
+          Text("Scenario commands require your confirmation. Questions never change the economy.")
         }
-        if isParsing { ProgressView("Reading your request…") }
         if !response.isEmpty {
-          VStack(alignment: .leading, spacing: 12) {
-            Text(source).font(.caption).foregroundStyle(.secondary)
-            Text(response).font(.subheadline).textSelection(.enabled)
-          }.padding(16).background(.purple.opacity(0.07), in: RoundedRectangle(cornerRadius: 20))
-            .accessibilityElement(children: .combine)
+          Section("Recorded evidence") {
+            VStack(alignment: .leading, spacing: 12) {
+              Text(source).font(.caption).foregroundStyle(.secondary)
+              Text(response).font(.body).lineSpacing(3).textSelection(.enabled)
+            }.padding(.vertical, 4).accessibilityElement(children: .combine).id(
+              "economist-evidence")
+          }
         }
-        ForEach(examples, id: \.self) { example in
-          Button {
-            question = example
-            answer()
+        Section("Try asking") {
+          ForEach(examples, id: \.self) { example in
+            Button {
+              question = example
+              answer()
+            } label: {
+              HStack(spacing: 12) {
+                Text(example).font(.body).foregroundStyle(.primary).multilineTextAlignment(.leading)
+                Spacer(minLength: 8)
+                Image(systemName: "arrow.up.left").font(.subheadline).foregroundStyle(.blue)
+              }.frame(minHeight: 44).contentShape(Rectangle())
+            }.buttonStyle(.plain).accessibilityLabel(example)
+          }
+        }
+        Section {
+          NavigationLink {
+            InstitutionDirectory(model: model, category: .businesses)
           } label: {
-            HStack {
-              Text(example).multilineTextAlignment(.leading)
-              Spacer()
-              Image(systemName: "arrow.up.left")
-            }.frame(minHeight: 44).contentShape(Rectangle())
-          }.buttonStyle(.plain).foregroundStyle(.purple)
+            Label("Explore actual businesses", systemImage: "building.2")
+          }
+        } footer: {
+          Text(
+            "Deterministic offline mode. No cloud model or API key. Foundation Models inference is not enabled. Unsupported requests do not change the economy. This synthetic model does not provide real-world financial advice."
+          )
         }
-        NavigationLink {
-          InstitutionDirectory(model: model, category: .businesses)
-        } label: {
-          Label("Explore actual businesses", systemImage: "building.2")
-        }.frame(minHeight: 44).contentShape(Rectangle())
-        Text(
-          "No cloud model or API key. This deterministic parser supports documented commands; optional Foundation Models inference is not enabled. Unsupported requests do not change the economy. This is not real-world financial advice."
-        ).font(.caption).foregroundStyle(.secondary)
-      }.padding(18)
-    }.background(Color.cityNight).navigationTitle("AI Economist").navigationBarTitleDisplayMode(
-      .inline
-    )
-    .sheet(item: $crisis) { CrisisEditor(model: model, initial: $0) }
-    .sheet(item: $policy) { PolicyEditor(model: model, initial: $0) }
-    .onDisappear {
-      task?.cancel()
-      isParsing = false
+      }.listStyle(.insetGrouped).navigationTitle("AI Economist").navigationBarTitleDisplayMode(
+        .large
+      )
+      .scrollDismissesKeyboard(.interactively)
+      .sheet(item: $crisis) { CrisisEditor(model: model, initial: $0) }
+      .sheet(item: $policy) { PolicyEditor(model: model, initial: $0) }
+      .onChange(of: response) { _, value in
+        if !value.isEmpty { proxy.scrollTo("economist-evidence", anchor: .top) }
+      }
+      .onDisappear {
+        task?.cancel()
+        isParsing = false
+      }
     }
   }
   private func answer() {

@@ -21,9 +21,9 @@ Verification from the project root:
 
 ```sh
 xcrun simctl list devices available
-xcodebuild -project Econopolis.xcodeproj -scheme Econopolis -configuration Debug -derivedDataPath .build/ios -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project Econopolis.xcodeproj -scheme Econopolis -configuration Debug -derivedDataPath .build/ios -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
 # Replace SIMULATOR_ID with an available iPhone simulator UUID:
-xcodebuild -project Econopolis.xcodeproj -scheme Econopolis -configuration Debug -derivedDataPath .build/ios -destination 'platform=iOS Simulator,id=SIMULATOR_ID' -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+xcodebuild -project Econopolis.xcodeproj -scheme Econopolis -configuration Debug -derivedDataPath .build/ios -destination 'platform=iOS Simulator,id=SIMULATOR_ID' -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
 # Additional platform-independent library verification only:
 swift test --package-path Packages/EconopolisCore --scratch-path .build/core
 ```
@@ -33,3 +33,7 @@ Use actual iOS destinations for app verification. If no runtime exists, `xcodebu
 Report measured simulator/core timings with configuration and hardware context; never invent real-device FPS/battery results. Physical iPhone checks require a connected device. Unsigned release archiving is authorized; signing/TestFlight require available credentials and permissions; do not claim an upload without verification. Keep `docs/IMPLEMENTATION_STATUS.md` current with actual command results and limitations.
 
 Xcode 27 viewer correction: use `/Applications/Xcode.app/Contents/Applications/DeviceHub.app` (Device Hub), not the removed Simulator.app. Open via Xcode → Open Developer Tool → Device Hub. Running from Xcode with an iPhone destination opens its device window. `simctl launch` alone does not ensure a visible device window. Accessibility automation is disabled on this host; do not claim GUI tools are missing merely because the old Simulator app path is absent.
+
+Current user-approved UI direction follows Apple-native iOS appearance: default to System, use system grouped backgrounds/content surfaces, semantic text colors, standard SwiftUI text styles and system blue interactions. Use green/amber/red only for meaningful financial status. Prefer native grouped sections for forms and directories; keep glass on navigation/floating controls. Avoid forced-dark/neon themes, custom typefaces and letter-spaced product headings. Apple references and implementation choices are in docs/IOS_DESIGN_SYSTEM.md.
+
+Optional Live Stocks is separate from the deterministic economy. It uses only exchangeInfo/quote HTTPS GET requests to api.binance.com, a user-entered Keychain API key, bounded foreground polling and sanitized errors. Never place orders or accept provider legal terms from this feature. Never store API keys in source, UserDefaults, snapshots or exports. Keep Simulator signing enabled (CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=-) for Keychain entitlement generation; device archives can compile unsigned but cannot be distributed/run on devices without proper signing. UI tests use an isolated Keychain namespace. See docs/LIVE_STOCKS.md.

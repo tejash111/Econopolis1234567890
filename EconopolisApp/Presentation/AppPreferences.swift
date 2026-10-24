@@ -21,7 +21,7 @@ import UIKit
       GraphicsQuality(rawValue: UserDefaults.standard.string(forKey: "graphicsQuality") ?? "")
       ?? .balanced
     flows = UserDefaults.standard.object(forKey: "showFlows") as? Bool ?? true
-    appearance = UserDefaults.standard.string(forKey: "appearance") ?? "Dark"
+    appearance = UserDefaults.standard.string(forKey: "appearance") ?? "System"
   }
   var colorScheme: ColorScheme? {
     appearance == "Dark" ? .dark : (appearance == "Light" ? .light : nil)

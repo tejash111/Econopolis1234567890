@@ -6,7 +6,7 @@
 
 **Explore a city. Trigger a crisis. Rewind the economy. Compare two futures.**
 
-An offline, native iPhone financial simulation built with Swift 6, SwiftUI and RealityKit.
+A native iPhone financial simulation built with Swift 6, SwiftUI and RealityKit. Offline simulated economy, with an optional online stock-quote reference.
 
 [iPhone app](#run-the-app) · [Features](#features) · [Live demo](#the-great-bank-run-live-demo) · [Architecture](#how-it-works) · [Test results](#builds-tests-and-measured-performance)
 
@@ -40,14 +40,16 @@ These are actual iPhone Simulator captures, not design mockups. Values shown bel
 
 <table>
   <tr>
-    <td align="center"><strong>The living city during a bank run</strong></td>
-    <td align="center"><strong>Calculated World A / World B outcomes</strong></td>
+    <td align="center"><strong>Native iOS city · Light appearance</strong></td>
+    <td align="center"><strong>Live financial metrics</strong></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/Screenshots/BankRunCity.png" width="300" alt="ECONOPOLIS procedural 3D city on iPhone during a calculated bank run"></td>
-    <td align="center"><img src="docs/Screenshots/ComputedFutures.png" width="300" alt="Same-day comparison of employment, stress, unmet withdrawals and public liquidity claims"></td>
+    <td align="center"><img src="docs/Screenshots/NativeUI/Light-City.png" width="300" alt="Native iOS system colors and typography around the interactive ECONOPOLIS city"></td>
+    <td align="center"><img src="docs/Screenshots/NativeUI/Light-Economy.png" width="300" alt="Recorded economic metrics on adaptive native iOS content surfaces"></td>
   </tr>
 </table>
+
+Native design: [Light Economy](docs/Screenshots/NativeUI/Light-Economy.png), [Dark Crisis Lab](docs/Screenshots/NativeUI/Dark-CrisisLab.png), and [Light Economist](docs/Screenshots/NativeUI/Light-Economist.png). See the [Apple-guided refresh notes](docs/APPLE_UI_REFRESH.md).
 
 More captures: [banking heatmap](docs/Screenshots/BankingHeatmap.png), [citizen inspector](docs/Screenshots/CitizenInspector.png), [offline economist](docs/Screenshots/OfflineEconomist.png), and [normal app launch](docs/Screenshots/FinalStandaloneLaunch.png). Capture provenance is recorded in [Screenshots/README.md](docs/Screenshots/README.md).
 
@@ -97,7 +99,7 @@ Five primary tabs keep the experience mobile-first:
 
 Playback includes **Play, Pause, Advance one day, speed selection, Reset same seed and Regenerate city**. Commands share one serialized owner to prevent duplicate playback loops and stale results after reset.
 
-The interface uses native tabs, navigation stacks and bottom sheets, dark/light/system appearance, financial number formatting and haptic feedback. Native **Liquid Glass on iOS 26+** has system-material fallbacks on earlier supported versions. VoiceOver labels, Dynamic Type and Reduce Motion support are included; comprehensive device accessibility testing remains outstanding.
+The interface follows the system appearance by default, with standard iOS blue actions, adaptive grouped backgrounds, white/elevated content surfaces and native San Francisco text styles. Crisis Lab and AI Economist use familiar grouped sections. Native tabs, navigation stacks, bottom sheets, dark/light overrides, financial number formatting and haptic feedback are included. Native **Liquid Glass on iOS 26+** has system-material fallbacks on earlier supported versions. VoiceOver labels, Dynamic Type and Reduce Motion support are included; comprehensive device accessibility testing remains outstanding.
 
 ### 3. Real economic activity and metrics
 
@@ -201,6 +203,16 @@ Joining starts a **new shared 1,001-citizen baseline** rather than inserting mon
 - Invalid saved sessions surface a recovery path instead of being silently deleted.
 - Export **World A/B metric CSV files**, **World A configuration JSON** and **comparison JSON**, with native iOS share links. Export requires a stable paused state.
 
+### 11. Live Stocks — optional Binance market data
+
+Open **Economy → Live Stocks** to connect the market-data API. This screen uses Binance's `exchangeInfo` and `quote` GET endpoints, showing actual returned stock symbols, best bid/ask prices in USD, share sizes, retrieval times and supported exchange metadata. Search the catalog and follow up to eight stocks, with a five-second refresh target, pause/resume and explicit error/stale-data states.
+
+**A Binance market-data API key and internet access are required for this optional screen.** Enter the key only in the app's secure connection form; it is stored in the device Keychain. An API secret is not required. The client does not place trades, read account balances, mint tokens or accept account disclaimers. It does not invent unavailable quotes or daily price changes.
+
+REST quotes may already be about five seconds old. Fetched times are receipt times, not exchange execution timestamps. Real-world prices never alter the synthetic city's finances, metrics, snapshots or deterministic replay. The city and guided demo remain usable offline without a key.
+
+The client, secure storage, error handling and no-key UI are tested. [Connection screen](docs/Screenshots/NativeUI/LiveStocks-Connect.png) · [secure setup](docs/Screenshots/NativeUI/LiveStocks-Keychain.png). **Authenticated live quotes remain unverified because no provider key was supplied.** Access also depends on provider account/product eligibility and location. See [Live Stocks setup and verification](docs/LIVE_STOCKS.md).
+
 ## The Great Bank Run live demo
 
 This repeatable, offline preset uses **seed 2026** and computes its results through the normal engine.
@@ -224,7 +236,7 @@ Use **Restart live demo** to repeat. The preset does not hardcode a successful r
 - Verified development toolchain: **Xcode 27.1, Swift 6.4 and iOS SDK 27.1**.
 - A signing team/provisioned device only if running on a physical iPhone.
 
-No CocoaPods, external package download, account, backend, authentication, paid API or camera permission is required. There is no macOS or Mac Catalyst application target. The core's macOS library platform exists only for independent host tests.
+The simulation/demo requires no CocoaPods, external package download, account, backend, authentication, paid API or camera permission. Optional Live Stocks requires internet and a user-supplied Binance API key. There is no macOS or Mac Catalyst application target. The core's macOS library platform exists only for independent host tests.
 
 ### Clone and launch
 
@@ -297,6 +309,7 @@ Econopolis.xcodeproj/             iPhone app, hosted test and UI-test targets
 EconopolisApp/
   City/                          Procedural layout, projection, camera, RealityKit and Canvas
   Components/                    Shared financial and glass UI components
+  MarketData/                    Read-only Binance quotes, Keychain and polling state
   Persistence/                   SwiftData session storage
   Presentation/                  Preferences, chart projection, formatting and exports
   ViewModels/                    Observable state and serialized simulation controls
@@ -321,13 +334,15 @@ AGENTS.md                        Durable engineering conventions and verificatio
 
 ## Builds, tests and measured performance
 
-The last completed acceptance run is documented in [TEST_REPORT.md](docs/TEST_REPORT.md).
+The combined-phase acceptance run and subsequent native UI refresh checks are documented separately in [TEST_REPORT.md](docs/TEST_REPORT.md).
 
 | Verification | Actual result |
 |---|---|
-| iPhone Simulator acceptance suite | **47 passed, 0 failed, 0 skipped** |
+| Combined-phase iPhone Simulator acceptance suite, before the later UI refresh | **47 passed, 0 failed, 0 skipped** |
 | Hosted iOS tests | **43 passed**, including the shared core and presentation/lifecycle cases |
 | Native UI interaction tests | **4 passed**, including the complete bank-run/rewind/rescue flow |
+| Native UI + market-data targeted integration | **22 passed, 0 failed**, including 6 UI tests |
+| Final credential lifecycle audit | **11 passed, 0 failed**, including 10 client/storage cases and 1 UI case; overlaps the integration run |
 | Additional portable core run | **32 passed**; these overlap shared iOS cases and are not 32 additional unique app tests |
 | iPhone Release archive | Built successfully without signing |
 | Final normal Simulator launch | Verified without UI-test launch arguments |
@@ -355,13 +370,13 @@ xcrun simctl list devices available
 xcodebuild -project Econopolis.xcodeproj -scheme Econopolis \
   -configuration Debug -derivedDataPath .build/ios \
   -destination 'generic/platform=iOS Simulator' \
-  CODE_SIGNING_ALLOWED=NO build
+  CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
 
 # Replace SIMULATOR_ID with a discovered iPhone Simulator UUID.
 xcodebuild -project Econopolis.xcodeproj -scheme Econopolis \
   -configuration Debug -derivedDataPath .build/ios \
   -destination 'platform=iOS Simulator,id=SIMULATOR_ID' \
-  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
 
 # Verify the portable library on the host; this does not verify iPhone UI.
 swift test --package-path Packages/EconopolisCore --scratch-path .build/core
@@ -398,7 +413,8 @@ The offline hackathon journey is implemented and verified on Simulator. Release 
 | [Crisis engine](docs/CRISIS_ENGINE.md) | Shock mechanisms, funding, recovery and evidence semantics |
 | [Time travel](docs/TIME_TRAVEL.md) | Snapshots, deterministic replay, independent branches and demo horizon |
 | [iOS UI architecture](docs/IOS_UI_ARCHITECTURE.md) | Rendering, selection, gestures, heatmaps and lifecycle |
-| [iOS design system](docs/IOS_DESIGN_SYSTEM.md) | Native materials/glass, components and accessibility |
+| [iOS design system](docs/IOS_DESIGN_SYSTEM.md) | Apple HIG references, semantic colors, system typography, glass and accessibility |
+| [Live Stocks](docs/LIVE_STOCKS.md) | Optional Binance quotes, secure setup, signing and authenticated-verification limits |
 | [AI Economist](docs/AI_ECONOMIST.md) | Offline grammar, validation, evidence and provider boundaries |
 | [Implementation status](docs/IMPLEMENTATION_STATUS.md) | Feature-by-feature implementation and remaining limits |
 | [Test report](docs/TEST_REPORT.md) | Executed commands, actual results, benchmarks and unresolved checks |

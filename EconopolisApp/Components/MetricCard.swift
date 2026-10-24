@@ -6,11 +6,11 @@ struct MetricCard: View {
   let value: String
   var body: some View {
     VStack(alignment: .leading, spacing: 7) {
-      Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary)
-      Text(value).font(.title3.weight(.semibold).monospacedDigit()).minimumScaleFactor(0.65)
+      Text(title).font(.subheadline).foregroundStyle(.secondary)
+      Text(value).font(.title2.weight(.semibold).monospacedDigit()).minimumScaleFactor(0.8)
         .lineLimit(1)
-    }.frame(maxWidth: .infinity, alignment: .leading).padding(14)
-      .background(Color.cardSurface, in: RoundedRectangle(cornerRadius: 18))
+    }.frame(maxWidth: .infinity, alignment: .leading).padding(16)
+      .background(Color.cardSurface, in: RoundedRectangle(cornerRadius: 16))
       .accessibilityElement(children: .combine)
   }
 }
@@ -28,12 +28,7 @@ func percent(_ value: Double) -> String {
   value.formatted(.number.precision(.fractionLength(1))) + "%"
 }
 extension Color {
-  static let cityNight = Color(
-    UIColor {
-      $0.userInterfaceStyle == .dark
-        ? UIColor(red: 0.035, green: 0.055, blue: 0.08, alpha: 1)
-        : UIColor(red: 0.94, green: 0.95, blue: 0.96, alpha: 1)
-    })
+  static let appBackground = Color(UIColor.systemGroupedBackground)
   static let cardSurface = Color(UIColor.secondarySystemGroupedBackground)
 }
 extension View {

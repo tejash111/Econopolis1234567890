@@ -29,15 +29,15 @@ struct MobileRootView: View {
         }
       } else {
         VStack(spacing: 20) {
-          Image(systemName: "building.2.crop.circle").font(.system(size: 60)).foregroundStyle(.cyan)
-          Text("ECONOPOLIS").font(.title.bold()).tracking(3)
+          Image(systemName: "building.2.crop.circle").font(.system(size: 60)).foregroundStyle(.blue)
+          Text("Econopolis").font(.largeTitle.bold())
           if model.error == nil {
             ProgressView("Opening your economy")
           } else {
             Text("The saved session could not be opened.")
             Button("Start a new economy") { model.reset() }.buttonStyle(.borderedProminent)
           }
-        }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.cityNight)
+        }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.appBackground)
       }
     }
     .onChange(of: model.preferences.focusRevision) { _, _ in
@@ -88,7 +88,7 @@ struct PlaybackBar: View {
       } label: {
         Image(systemName: model.isPlaying ? "pause.fill" : "play.fill").frame(width: 46, height: 44)
       }
-      .buttonStyle(.borderedProminent).tint(.cyan).accessibilityLabel(
+      .buttonStyle(.borderedProminent).tint(.blue).accessibilityLabel(
         model.isPlaying ? "Pause simulation" : "Play simulation"
       ).accessibilityIdentifier("playPause").disabled(model.isBusy || !model.synchronized)
       Button {
@@ -120,6 +120,6 @@ struct PlaybackBar: View {
       } label: {
         Image(systemName: "slider.horizontal.3").frame(width: 44, height: 44)
       }.accessibilityLabel("City options").disabled(model.isBusy)
-    }.padding(7).economicGlass()
+    }.padding(8).economicGlass()
   }
 }

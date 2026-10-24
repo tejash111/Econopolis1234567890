@@ -40,3 +40,15 @@ Full ledger journals grow over time; the causal journal is bounded to 600 and th
 Physical iPhone execution, actual FPS/energy/peak-memory measurements, iOS 18 runtime behavior, landscape screenshot quality and a comprehensive accessibility audit remain unverified. Xcode 27.1 prints an SDK build-number parsing warning and RealityKit simulator shader/environment diagnostics; these did not prevent rendering or the verified builds/tests. This educational synthetic economy must not be marketed as forecasting real policy or markets.
 
 Final portable core result: **32 tests passed**. Final simulator benchmarks: 90 days **7.622169708 s** / 194,582 settled transfers; 365 days with shocks **31.616810917 s** / 750,106 settled transfers. No real-device FPS is claimed. One runtime QoS priority-inversion warning during the touch/fallback test remains for Instruments profiling; no source location was supplied.
+
+## Native iOS visual refresh
+
+The UI now defaults to System appearance, uses semantic grouped backgrounds/content surfaces and system blue interactions/charts, and retains native dynamic system typography. Crisis Lab and AI Economist use inset grouped sections; City uses a compact title and neutral floating controls. The 3D ground adapts to appearance without resetting camera or economic state. Metric cards adapt to accessibility text sizes. Economic core source is unchanged. Apple references are recorded in IOS_DESIGN_SYSTEM.md; this refresh's build and targeted UI results are recorded separately in TEST_REPORT.md.
+
+## Optional Live Stocks
+
+Economy now links to a native read-only Binance stock-quote screen: actual symbol catalog, eight-symbol watchlist, best bid/ask and sizes, five-second foreground refresh target, retrieval/stale/unavailable states, pause/resume, sanitized errors and Keychain credentials. No trading/account/mint/disclaimer methods are implemented; no real-world quote feeds the simulated economy. Nine client/storage tests and a no-key onboarding/cancellation UI test passed (10 total). The unauthenticated production endpoint returned HTTP 400 / -2014. Authenticated live prices are **not verified**, because no valid provider key was supplied. Simulator builds need local signing for Keychain; README/AGENTS commands now reflect this. See LIVE_STOCKS.md for exact setup and limitations.
+
+Final optional-market credential audit passed 11 tests (10 client/storage/lifecycle and one UI case), including protection against key reload during deletion. The 22-test native UI/market integration also passed. These runs overlap and are not summed as unique tests. Authenticated real quotes remain pending a user-supplied key.
+
+Latest complete-source Release archive `.build/ECONOPOLIS-Current.xcarchive` built successfully (unsigned generic iOS). This includes the native UI refresh, optional read-only Binance reference and final credential lifecycle guard. It is not a signed device distribution or TestFlight upload.

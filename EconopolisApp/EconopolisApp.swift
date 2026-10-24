@@ -9,7 +9,7 @@ struct EconopolisApp: App {
     WindowGroup {
       MobileRootView(model: coordinator.simulation, storageError: coordinator.storageError)
         .preferredColorScheme(coordinator.simulation.preferences.colorScheme)
-        .tint(.mint)
+        .tint(.blue)
         .task { coordinator.start() }
         .onChange(of: scenePhase) { _, phase in
           switch phase {

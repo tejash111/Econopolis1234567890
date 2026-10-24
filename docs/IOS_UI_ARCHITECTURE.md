@@ -43,3 +43,7 @@ Scores are 0...10000. Green is below 3500, amber is 3500...6999, red is 7000+. A
 Swift 6, iPhone only, iOS 18 baseline. No camera permission, AR session, backend, paid library or authentication. iOS 26 glass has availability fallbacks. Scene-update CPU time and logical entity counts are measured separately from rendering FPS; neither is a claim of physical-device frame rate. Consult the current test reports for actual destinations, measurements, screenshots and unverified device checks.
 
 The interactive Canvas fallback shares the snapshot and preferences interfaces. It supports touch pan/zoom, entity selection, camera reset/focus and real heatmap colors. It deliberately omits 3D flow particles. Switching equal-day A/B branches invalidates heatmap and density caches so visual state follows the selected world.
+
+## Native appearance update
+
+The default appearance now follows the OS. Semantic UIKit background colors bridge into SwiftUI and RealityKit; blue is the shared interaction/chart accent. Crisis Lab and AI Economist use native inset grouped lists, and root financial destinations use large system navigation titles. The city ground adapts to light/dark settings without resetting the economic state or camera. Accessibility-size metric layouts collapse to one column. See IOS_DESIGN_SYSTEM.md for Apple source references and component conventions.
