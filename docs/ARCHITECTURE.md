@@ -30,4 +30,4 @@ Further details: [iOS UI](IOS_UI_ARCHITECTURE.md), [economic model](ECONOMIC_MOD
 
 ## Optional external market reference
 
-`EconopolisApp/MarketData` contains a read-only Binance URLSession client actor, Keychain actor and main-actor polling model. `LiveStocksScreen` is reached from Economy. It is deliberately outside `EconopolisCore`; external stock quotes never affect simulated balances, metrics, seeds or branches. The only provider methods are GET exchangeInfo and quote. The core/demo remain offline; the optional screen requires an API key/network and signed-app Keychain access. See LIVE_STOCKS.md.
+`EconopolisApp/MarketData` contains a read-only CoinGecko Demo URLSession actor, dedicated Keychain actor and main-actor polling model. `LiveCryptoScreen` is reached from Economy. Catalog resolution precedes batched market requests. Up to eight coins refresh once per minute, only while active; cancellation/revision checks discard replaced work. Provider timestamps determine freshness and seven-day charts display provider samples without inventing timestamps. External observations never affect core balances, seeds or branches. See LIVE_CRYPTO.md.

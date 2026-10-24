@@ -15,13 +15,13 @@ struct EconomyScreen: View {
       VStack(alignment: .leading, spacing: 20) {
         WorldPicker(model: model)
         NavigationLink {
-          LiveStocksScreen()
+          LiveCryptoScreen()
         } label: {
           HStack(spacing: 12) {
             Image(systemName: "chart.line.uptrend.xyaxis").font(.title3).foregroundStyle(.blue)
             VStack(alignment: .leading, spacing: 3) {
-              Text("Live Stocks").font(.headline).foregroundStyle(.primary)
-              Text("Binance market data · optional connection").font(.caption).foregroundStyle(
+              Text("Live Crypto").font(.headline).foregroundStyle(.primary)
+              Text("CoinGecko crypto data · optional connection").font(.caption).foregroundStyle(
                 .secondary)
             }
             Spacer()
@@ -29,7 +29,7 @@ struct EconomyScreen: View {
               .tertiary)
           }.padding(16).background(Color.cardSurface, in: RoundedRectangle(cornerRadius: 16))
             .contentShape(Rectangle())
-        }.buttonStyle(.plain).accessibilityIdentifier("liveStocks")
+        }.buttonStyle(.plain).accessibilityIdentifier("liveCrypto")
 
         if let update = model.update {
           HStack(alignment: .firstTextBaseline) {

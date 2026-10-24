@@ -3,10 +3,13 @@ import Testing
 
 @testable import Econopolis
 
-private let fixtureKey = "unit-test-only-market-key"
+private let fixtureKey = "CG-unit-test-only-market-key"
+private let fixtureCoins = Data(
+  #"[{"id":"bitcoin","symbol":"btc","name":"Bitcoin"},{"id":"ethereum","symbol":"eth","name":"Ethereum"}]"#
+    .utf8)
 private let fixtureQuote = Data(
-  #"{"symbol":"AAPL","bidPrice":"100.1250","askPrice":"100.1300","bidSize":100,"askSize":200}"#.utf8
-)
+  #"[{"id":"bitcoin","symbol":"btc","name":"Bitcoin","current_price":100.1250,"market_cap":2000,"total_volume":500,"price_change_percentage_24h":-1.25,"last_updated":"2026-10-24T10:00:00.000Z","sparkline_in_7d":{"price":[100,101,100.125]}}]"#
+    .utf8)
 private actor FixtureTransport: MarketHTTPTransport {
   var responses: [MarketHTTPResponse]
   var requests: [URLRequest] = []
@@ -27,20 +30,17 @@ private actor MemoryMarketCredentials: MarketCredentialStore {
   func save(_ key: String) { value = key }
   func delete() { value = nil }
 }
-private actor SuspendedStocksAPI: StocksMarketDataAPI {
-  var pending: CheckedContinuation<StockQuote?, Error>?
-  func exchangeInfo(key: String) -> [StockSymbol] {
-    [
-      StockSymbol(
-        symbol: "AAPL", tradability: "BUY_SELL", overnightSupported: nil, fractionable: nil,
-        extendedSession: nil)
-    ]
+private actor SuspendedCryptoAPI: CryptoMarketDataAPI {
+  var pending: CheckedContinuation<[CryptoQuote], Error>?
+  func coins(key: String) throws -> [CryptoCoin] {
+    try JSONDecoder().decode([CryptoCoin].self, from: fixtureCoins)
   }
-  func quote(symbol: String, key: String) async throws -> StockQuote? {
+  func quotes(ids: [String], key: String) async throws -> [CryptoQuote] {
     try await withCheckedThrowingContinuation { pending = $0 }
   }
   func complete() throws {
-    pending?.resume(returning: try JSONDecoder().decode(StockQuote.self, from: fixtureQuote))
+    let decoder = JSONDecoder()
+    pending?.resume(returning: try decoder.decode([CryptoQuote].self, from: fixtureQuote))
     pending = nil
   }
 }
@@ -56,110 +56,124 @@ private actor SuspendedDeletingCredentials: MarketCredentialStore {
     pending = nil
   }
 }
-@Suite("Read-only Binance market data", .serialized)
+@Suite("Read-only CoinGecko Demo market data", .serialized)
 struct MarketDataTests {
-  @Test func validGETHeaderAndExactDecimalParsing() async throws {
-    let info = Data(
-      #"{"timezone":"UTC","symbols":[{"symbol":"MSFT","tradability":"BUY_SELL"},{"symbol":"AAPL","tradability":"BUY_SELL"}]}"#
-        .utf8)
-    let transport = FixtureTransport([response(info), response(fixtureQuote)])
-    let client = BinanceStocksClient(transport: transport)
-    #expect(try await client.exchangeInfo(key: fixtureKey).map(\.symbol) == ["AAPL", "MSFT"])
-    let quote = try #require(try await client.quote(symbol: "aapl", key: fixtureKey))
-    #expect(quote.bid == Decimal(string: "100.1250"))
-    #expect(quote.ask == Decimal(string: "100.1300"))
+  @Test func resolvedIDsBatchGETHeaderAndDecimalParsing() async throws {
+    let transport = FixtureTransport([response(fixtureCoins), response(fixtureQuote)])
+    let client = CoinGeckoClient(transport: transport)
+    let coins = try await client.coins(key: fixtureKey)
+    #expect(coins.map(\.id) == ["bitcoin", "ethereum"])
+    let quotes = try await client.quotes(ids: coins.map(\.id), key: fixtureKey)
+    let quote = try #require(quotes.first)
+    #expect(quote.currentPrice == Decimal(string: "100.1250"))
+    #expect(quote.priceChangePercentage24h == -1.25)
+    #expect(quote.sparklineIn7d?.price.count == 3)
+    #expect(quote.updatedAt != nil)
     let requests = await transport.requests
     #expect(requests.count == 2)
     #expect(
       requests.allSatisfy {
-        $0.httpMethod == "GET" && $0.httpBody == nil && $0.url?.host == "api.binance.com"
+        $0.httpMethod == "GET" && $0.httpBody == nil && $0.url?.host == "api.coingecko.com"
           && $0.url?.scheme == "https"
+          && $0.value(forHTTPHeaderField: "x-cg-demo-api-key") == fixtureKey
+          && $0.value(forHTTPHeaderField: "x-cg-pro-api-key") == nil
+          && !$0.url!.absoluteString.contains(fixtureKey)
       })
-    #expect(requests[0].value(forHTTPHeaderField: "X-MBX-APIKEY") == fixtureKey)
-    #expect(requests[1].url?.query == "symbol=AAPL")
-    #expect(!requests[1].url!.absoluteString.contains(fixtureKey))
+    #expect(requests[0].url?.path == "/api/v3/coins/list")
+    let query = URLComponents(url: requests[1].url!, resolvingAgainstBaseURL: false)!.queryItems!
+    #expect(query.contains(.init(name: "ids", value: "bitcoin,ethereum")))
+    #expect(query.contains(.init(name: "vs_currency", value: "usd")))
   }
-  @Test func missingKeyOrInvalidSymbolSendsNothing() async throws {
+  @Test func missingKeyAndInvalidIDsSendNothing() async throws {
     let transport = FixtureTransport([])
-    let client: BinanceStocksClient
-    client = BinanceStocksClient(transport: transport)
-    await #expect(throws: StockMarketError.missingKey) {
-      _ = try await client.exchangeInfo(key: "")
+    let client = CoinGeckoClient(transport: transport)
+    for key in ["", "CG-bad\nheader-key"] {
+      await #expect(throws: CryptoMarketError.missingKey) { _ = try await client.coins(key: key) }
     }
-    await #expect(throws: StockMarketError.missingKey) {
-      _ = try await client.exchangeInfo(key: "bad\nheader-key")
-    }
-    await #expect(throws: StockMarketError.invalidSymbol) {
-      _ = try await client.quote(symbol: "AAPL&signature=bad", key: fixtureKey)
+    for ids in [
+      [], [""], ["bitcoin,ethereum"], ["bitcoin", "bitcoin"], Array(repeating: "id", count: 9),
+    ] {
+      await #expect(throws: CryptoMarketError.invalidCoin) {
+        _ = try await client.quotes(ids: ids, key: fixtureKey)
+      }
     }
     #expect(await transport.requests.isEmpty)
   }
-  @Test func emptyAndNullQuotesRemainUnavailable() async throws {
-    let client = BinanceStocksClient(
+  @Test func missingFieldsAndEmptyResultsStayUnavailable() async throws {
+    let client = CoinGeckoClient(
       transport: FixtureTransport([
-        response(Data()), response(Data(" \n".utf8)), response(Data("null".utf8)),
+        response(Data("[]".utf8)),
+        response(
+          Data(#"[{"id":"bitcoin","symbol":"btc","name":"Bitcoin","current_price":null}]"#.utf8)),
       ]))
-    for _ in 0..<3 { #expect(try await client.quote(symbol: "AAPL", key: fixtureKey) == nil) }
+    #expect(try await client.quotes(ids: ["bitcoin"], key: fixtureKey).isEmpty)
+    let quote = try #require(try await client.quotes(ids: ["bitcoin"], key: fixtureKey).first)
+    #expect(quote.currentPrice == nil && quote.sparklineIn7d == nil && quote.isStale(at: .now))
+    #expect(cryptoMoney(quote.currentPrice) == "Unavailable")
   }
-  @Test func malformedMismatchedAndNegativeQuotesAreRejected() async throws {
-    for data in [
-      Data("{}".utf8),
-      Data(
-        String(decoding: fixtureQuote, as: UTF8.self).replacingOccurrences(of: "AAPL", with: "MSFT")
-          .utf8),
-      Data(
-        String(decoding: fixtureQuote, as: UTF8.self).replacingOccurrences(
-          of: "100.1250", with: "-1"
-        ).utf8),
+  @Test func malformedMismatchedNegativeAndDuplicateQuotesRejected() async throws {
+    let raw = String(decoding: fixtureQuote, as: UTF8.self)
+    for raw in [
+      "{}", "null", "", raw.replacingOccurrences(of: "bitcoin", with: "other"),
+      raw.replacingOccurrences(of: "100.1250", with: "-1"),
+      "[" + raw.dropFirst().dropLast() + "," + raw.dropFirst().dropLast() + "]",
     ] {
-      let client = BinanceStocksClient(transport: FixtureTransport([response(data)]))
-      await #expect(throws: StockMarketError.invalidResponse) {
-        _ = try await client.quote(symbol: "AAPL", key: fixtureKey)
+      let client = CoinGeckoClient(transport: FixtureTransport([response(Data(raw.utf8))]))
+      await #expect(throws: CryptoMarketError.invalidResponse) {
+        _ = try await client.quotes(ids: ["bitcoin"], key: fixtureKey)
       }
     }
   }
-  @Test func authenticationErrorsAndRateLimitAreExplicit() async throws {
-    let errors = FixtureTransport([
-      response(
-        Data(#"{"code":-2014,"msg":"private-detail-must-not-be-displayed"}"#.utf8), status: 400),
-      response(Data(), status: 429, retry: "7200"), response(Data(), status: 451),
-    ])
-    let client = BinanceStocksClient(transport: errors)
-    await #expect(throws: StockMarketError.invalidKey) {
-      _ = try await client.exchangeInfo(key: fixtureKey)
+  @Test func authPlanAndRateLimitErrorsAreSanitized() async throws {
+    let fixtures: [(MarketHTTPResponse, CryptoMarketError)] = [
+      (response(Data(), status: 401), .invalidKey),
+      (
+        response(
+          Data(#"{"status":{"error_code":10010,"error_message":"private-details"}}"#.utf8),
+          status: 400), .wrongPlan
+      ),
+      (response(Data(#"{"status":{"error_code":10005}}"#.utf8), status: 400), .higherPlan),
+      (response(Data(), status: 429, retry: "7200"), .rateLimited(7200)),
+      (response(Data(), status: 429), .rateLimited(60)),
+      (response(Data(), status: 451), .http(451)),
+    ]
+    for (fixture, expected) in fixtures {
+      let client = CoinGeckoClient(transport: FixtureTransport([fixture]))
+      await #expect(throws: expected) { _ = try await client.coins(key: fixtureKey) }
+      #expect(!expected.localizedDescription.contains("private-details"))
     }
-    await #expect(throws: StockMarketError.rateLimited(7200)) {
-      _ = try await client.exchangeInfo(key: fixtureKey)
-    }
-    await #expect(throws: StockMarketError.http(451)) {
-      _ = try await client.exchangeInfo(key: fixtureKey)
-    }
-    #expect(!StockMarketError.invalidKey.localizedDescription.contains("private-detail"))
+  }
+  @Test func providerTimestampsDetermineStaleness() throws {
+    let decoder = JSONDecoder()
+    let quote = try #require(decoder.decode([CryptoQuote].self, from: fixtureQuote).first)
+    let date = try #require(quote.updatedAt)
+    #expect(!quote.isStale(at: date.addingTimeInterval(60)))
+    #expect(quote.isStale(at: date.addingTimeInterval(181)))
   }
   @Test @MainActor func missingCredentialsDoesNotContactProvider() async {
     let transport = FixtureTransport([])
-    let model = StocksViewModel(
-      client: BinanceStocksClient(transport: transport), credentials: MemoryMarketCredentials(),
+    let model = CryptoViewModel(
+      client: CoinGeckoClient(transport: transport), credentials: MemoryMarketCredentials(),
       preferences: nil)
     await model.run()
-    #expect(!model.hasKey && model.records.isEmpty && model.symbols.isEmpty)
+    #expect(!model.hasKey && model.records.isEmpty)
     #expect(await transport.requests.isEmpty)
   }
-  @Test func keychainRoundTripUsesIsolatedTestNamespace() async throws {
-    let store = MarketKeyStore(service: "org.econopolis.market-tests." + UUID().uuidString)
+  @Test func keychainRoundTripUsesIsolatedNamespace() async throws {
+    let store = MarketKeyStore(service: "org.econopolis.crypto-tests." + UUID().uuidString)
     try await store.save(fixtureKey)
     #expect(try await store.read() == fixtureKey)
-    try await store.save("updated-test-only-key")
-    #expect(try await store.read() == "updated-test-only-key")
+    try await store.save("CG-updated-test-only-key")
+    #expect(try await store.read() == "CG-updated-test-only-key")
     try await store.delete()
     #expect(try await store.read() == nil)
   }
   @Test @MainActor func disconnectedSessionRejectsLateQuote() async throws {
-    let api = SuspendedStocksAPI()
-    let credentials = MemoryMarketCredentials(fixtureKey)
-    let model = StocksViewModel(client: api, credentials: credentials, preferences: nil)
+    let api = SuspendedCryptoAPI()
+    let model = CryptoViewModel(
+      client: api, credentials: MemoryMarketCredentials(fixtureKey), preferences: nil)
     let run = Task { await model.run() }
-    let deadline = ContinuousClock.now + .seconds(3)
+    let deadline = ContinuousClock.now + .seconds(12)
     while await api.pending == nil && ContinuousClock.now < deadline {
       try await Task.sleep(for: .milliseconds(10))
     }
@@ -168,39 +182,14 @@ struct MarketDataTests {
     try await api.complete()
     await run.value
     #expect(!model.hasKey && model.records.isEmpty && model.symbols.isEmpty)
-    #expect(await credentials.read() == nil)
-  }
-  @Test @MainActor func watchlistIsBoundedAndUsesOnlyProviderSymbols() async throws {
-    let stocks = (0..<10).map {
-      StockSymbol(
-        symbol: "STK\($0)", tradability: "BUY_SELL", overnightSupported: nil, fractionable: nil,
-        extendedSession: nil)
-    }
-    let encoded = try JSONEncoder().encode(StockExchangeInfo(timezone: "UTC", symbols: stocks))
-    let transport = FixtureTransport([
-      response(encoded), response(Data()), response(Data()), response(Data()),
-    ])
-    let model = StocksViewModel(
-      client: BinanceStocksClient(transport: transport),
-      credentials: MemoryMarketCredentials(fixtureKey), preferences: nil)
-    let run = Task { await model.run() }
-    let deadline = ContinuousClock.now + .seconds(3)
-    while model.symbols.isEmpty && ContinuousClock.now < deadline {
-      try await Task.sleep(for: .milliseconds(10))
-    }
-    for symbol in stocks.dropFirst(3) { model.toggle(symbol.symbol) }
-    model.toggle("NOT-LISTED")
-    #expect(model.watchlist.count == 8 && !model.watchlist.contains("NOT-LISTED"))
-    run.cancel()
-    await run.value
   }
   @Test @MainActor func refreshCannotReloadKeyWhileDisconnecting() async throws {
     let transport = FixtureTransport([])
     let credentials = SuspendedDeletingCredentials()
-    let model = StocksViewModel(
-      client: BinanceStocksClient(transport: transport), credentials: credentials, preferences: nil)
+    let model = CryptoViewModel(
+      client: CoinGeckoClient(transport: transport), credentials: credentials, preferences: nil)
     let removing = Task { await model.disconnect() }
-    let deadline = ContinuousClock.now + .seconds(3)
+    let deadline = ContinuousClock.now + .seconds(12)
     while await credentials.pending == nil && ContinuousClock.now < deadline {
       try await Task.sleep(for: .milliseconds(10))
     }
@@ -211,5 +200,23 @@ struct MarketDataTests {
     await removing.value
     #expect(!model.hasKey && model.records.isEmpty)
   }
-
+  @Test @MainActor func watchlistUsesResolvedIDsAndBatchesRequests() async throws {
+    let transport = FixtureTransport([response(fixtureCoins), response(fixtureQuote)])
+    let model = CryptoViewModel(
+      client: CoinGeckoClient(transport: transport),
+      credentials: MemoryMarketCredentials(fixtureKey), preferences: nil)
+    let run = Task { await model.run() }
+    let deadline = ContinuousClock.now + .seconds(12)
+    while model.records.isEmpty && ContinuousClock.now < deadline {
+      try await Task.sleep(for: .milliseconds(10))
+    }
+    #expect(model.watchlist == ["bitcoin", "ethereum"])
+    #expect(model.records["bitcoin"]?.quote?.currentPrice == Decimal(string: "100.1250"))
+    #expect(model.records["ethereum"]?.quote == nil)
+    model.toggle("not-a-resolved-id")
+    #expect(!model.watchlist.contains("not-a-resolved-id"))
+    #expect(await transport.requests.count == 2)
+    run.cancel()
+    await run.value
+  }
 }

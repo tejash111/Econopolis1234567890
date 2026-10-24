@@ -126,16 +126,16 @@ import XCTest
     }
   }
 
-  func testLiveStocksConnectionPreviewDoesNotChangeCity() throws {
+  func testLiveCryptoConnectionPreviewDoesNotChangeCity() throws {
     let app = open()
     selectNativeTab("Economy", in: app)
-    tap("liveStocks", app: app)
+    tap("liveCrypto", app: app)
     XCTAssertTrue(app.staticTexts["Connect market data"].waitForExistence(timeout: 15))
-    capture("Live Stocks - no credentials", app: app)
-    tap("addStocksKey", app: app)
-    XCTAssertTrue(app.secureTextFields["stocksAPIKey"].waitForExistence(timeout: 10))
+    capture("Live Crypto - no credentials", app: app)
+    tap("addCryptoKey", app: app)
+    XCTAssertTrue(app.secureTextFields["cryptoAPIKey"].waitForExistence(timeout: 10))
     XCTAssertFalse(app.buttons["Save key and connect"].isEnabled)
-    capture("Live Stocks - secure connection form", app: app)
+    capture("Live Crypto - secure connection form", app: app)
     tap("Cancel", app: app)
     XCTAssertTrue(app.staticTexts["Connect market data"].waitForExistence(timeout: 10))
     selectNativeTab("City", in: app)

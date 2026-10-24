@@ -10,9 +10,10 @@ actor MarketKeyStore: MarketCredentialStore {
   private let service: String
   init(service: String? = nil) {
     self.service =
-      service ?? (Bundle.main.bundleIdentifier ?? "org.econopolis.app") + ".market-data"
+      service ?? (Bundle.main.bundleIdentifier ?? "org.econopolis.app") + ".coingecko-demo"
+      + (ProcessInfo.processInfo.arguments.contains("-econopolis-ui-testing") ? ".ui-tests" : "")
   }
-  private let account = "binance-market-data"
+  private let account = "coingecko-demo-market-data"
   private var query: [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,

@@ -111,3 +111,24 @@ Latest source unsigned device archive: `.build/ECONOPOLIS-Current.xcarchive`, Re
 ```sh
 xcodebuild -quiet -project Econopolis.xcodeproj -scheme Econopolis -configuration Release -derivedDataPath .build/release -destination 'generic/platform=iOS' -archivePath .build/ECONOPOLIS-Current.xcarchive CODE_SIGNING_ALLOWED=NO archive
 ```
+
+## CoinGecko Demo replacement — 2026-10-24
+
+The current Live Crypto implementation replaces Binance. Earlier stock tests above are historical, not evidence of authenticated CoinGecko data.
+
+Executed:
+
+```sh
+xcodebuild -quiet -project Econopolis.xcodeproj -scheme Econopolis -configuration Debug -derivedDataPath .build/ios -destination 'platform=iOS Simulator,id=BD53D5D9-F086-4961-AE37-EAE90C04684E' -parallel-testing-enabled NO -only-testing:EconopolisAppTests/MarketDataTests -only-testing:EconopolisUITests/CombinedDemoUITests/testLiveCryptoConnectionPreviewDoesNotChangeCity -resultBundlePath .build/CoinGeckoVerified.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+xcodebuild -quiet -project Econopolis.xcodeproj -scheme Econopolis -configuration Release -derivedDataPath .build/coingecko-release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+```
+
+Both exited **0**. Final test result: **12 passed, 0 failed, 0 skipped**, no runtime warnings in the result summary. Device: **iPhone 17, iOS 27.0, arm64 Simulator**, Xcode 27.1. This focused change does not modify economic core sources; financial tests were not rerun for this provider/UI replacement.
+
+Eleven hosted tests verify Demo-only HTTPS headers/paths, catalog ID resolution and batched requests, exact Decimal prices, real API percentage/sparkline fields, absent/empty data, malformed/mismatched/duplicate/negative data, sanitized authentication/plan errors, Retry-After, timestamp freshness, absent credentials without network access, isolated Keychain round trips, late-request rejection on disconnect, refresh during credential deletion, and provider-only watchlist selection. Shared three-second request spacing is active during tests. Fixtures are test-target-only observations, never a live market substitute.
+
+One XCTest UI case actually opens Economy → Live Crypto → secure key entry, checks the empty key cannot submit, cancels, and returns to City with day zero unchanged. Captured and visually inspected [connection](Screenshots/NativeUI/LiveCrypto-Connect.png) and [secure form](Screenshots/NativeUI/LiveCrypto-Keychain.png) screenshots. No clipping or overlapping primary controls observed in these portrait screens.
+
+Initial `.build/CoinGeckoAcceptance.xcresult` failed one of 11 hosted cases (two assertions): automatic snake-case decoding omitted digit-containing `24h` and `7d` optional fields. Explicit CodingKeys fixed it. The initial UI case passed. Xcode's diagnostic collector lingered after completion; its own simctl diagnose helper was terminated to finalize that failed bundle. The clean rerun above completed normally.
+
+**Unverified:** authenticated production responses, real-data detail/chart interaction, physical iPhone, iOS 18 runtime, FPS/energy and full accessibility audit. Supplied chat credentials are never embedded in source or committed; connection requires secure in-app key entry. No app distribution/signing/TestFlight claim. Generic Release compilation is not a signed device archive.

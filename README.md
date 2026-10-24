@@ -203,15 +203,15 @@ Joining starts a **new shared 1,001-citizen baseline** rather than inserting mon
 - Invalid saved sessions surface a recovery path instead of being silently deleted.
 - Export **World A/B metric CSV files**, **World A configuration JSON** and **comparison JSON**, with native iOS share links. Export requires a stable paused state.
 
-### 11. Live Stocks — optional Binance market data
+### 11. Live Crypto — optional CoinGecko Demo market data
 
-Open **Economy → Live Stocks** to connect the market-data API. This screen uses Binance's `exchangeInfo` and `quote` GET endpoints, showing actual returned stock symbols, best bid/ask prices in USD, share sizes, retrieval times and supported exchange metadata. Search the catalog and follow up to eight stocks, with a five-second refresh target, pause/resume and explicit error/stale-data states.
+Open **Economy → Live Crypto → Add market-data API key** and enter your **CoinGecko Demo** key. This replaces the previous Binance stock connection. The native screen shows USD prices, 24-hour changes, market capitalization, volume and seven-day provider sparklines when available. Search the full catalog by name, ticker or unique coin ID and follow up to eight coins.
 
-**A Binance market-data API key and internet access are required for this optional screen.** Enter the key only in the app's secure connection form; it is stored in the device Keychain. An API secret is not required. The client does not place trades, read account balances, mint tokens or accept account disclaimers. It does not invent unavailable quotes or daily price changes.
+Coin IDs are resolved using `/coins/list` before requesting `/coins/markets`. One batched watchlist request refreshes every minute while the screen is active. Pause/resume, provider timestamps, stale-data labels, unavailable fields and sanitized connection errors are supported. This is periodically refreshed reference data, not a tick-by-tick trading feed.
 
-REST quotes may already be about five seconds old. Fetched times are receipt times, not exchange execution timestamps. Real-world prices never alter the synthetic city's finances, metrics, snapshots or deterministic replay. The city and guided demo remain usable offline without a key.
+The connection uses `https://api.coingecko.com/api/v3` and only the `x-cg-demo-api-key` HTTPS header. The key is stored in the device Keychain, never in source, URLs, UserDefaults, simulation snapshots or exports. Pro keys are not supported by this Demo configuration. Market observations do not alter the offline economic model or its deterministic branches.
 
-The client, secure storage, error handling and no-key UI are tested. [Connection screen](docs/Screenshots/NativeUI/LiveStocks-Connect.png) · [secure setup](docs/Screenshots/NativeUI/LiveStocks-Keychain.png). **Authenticated live quotes remain unverified because no provider key was supplied.** Access also depends on provider account/product eligibility and location. See [Live Stocks setup and verification](docs/LIVE_STOCKS.md).
+See [Live Crypto setup and verification](docs/LIVE_CRYPTO.md). [Data provided by CoinGecko](https://www.coingecko.com/en/api).
 
 ## The Great Bank Run live demo
 
@@ -236,7 +236,7 @@ Use **Restart live demo** to repeat. The preset does not hardcode a successful r
 - Verified development toolchain: **Xcode 27.1, Swift 6.4 and iOS SDK 27.1**.
 - A signing team/provisioned device only if running on a physical iPhone.
 
-The simulation/demo requires no CocoaPods, external package download, account, backend, authentication, paid API or camera permission. Optional Live Stocks requires internet and a user-supplied Binance API key. There is no macOS or Mac Catalyst application target. The core's macOS library platform exists only for independent host tests.
+The simulation/demo requires no CocoaPods, external package download, account, backend, authentication, paid API or camera permission. Optional Live Crypto requires internet and a user-supplied CoinGecko Demo API key. There is no macOS or Mac Catalyst application target. The core's macOS library platform exists only for independent host tests.
 
 ### Clone and launch
 
@@ -309,7 +309,7 @@ Econopolis.xcodeproj/             iPhone app, hosted test and UI-test targets
 EconopolisApp/
   City/                          Procedural layout, projection, camera, RealityKit and Canvas
   Components/                    Shared financial and glass UI components
-  MarketData/                    Read-only Binance quotes, Keychain and polling state
+  MarketData/                    Read-only CoinGecko Demo markets, Keychain and polling state
   Persistence/                   SwiftData session storage
   Presentation/                  Preferences, chart projection, formatting and exports
   ViewModels/                    Observable state and serialized simulation controls
@@ -414,7 +414,7 @@ The offline hackathon journey is implemented and verified on Simulator. Release 
 | [Time travel](docs/TIME_TRAVEL.md) | Snapshots, deterministic replay, independent branches and demo horizon |
 | [iOS UI architecture](docs/IOS_UI_ARCHITECTURE.md) | Rendering, selection, gestures, heatmaps and lifecycle |
 | [iOS design system](docs/IOS_DESIGN_SYSTEM.md) | Apple HIG references, semantic colors, system typography, glass and accessibility |
-| [Live Stocks](docs/LIVE_STOCKS.md) | Optional Binance quotes, secure setup, signing and authenticated-verification limits |
+| [Live Crypto](docs/LIVE_CRYPTO.md) | Optional CoinGecko Demo prices, secure setup and verification limits |
 | [AI Economist](docs/AI_ECONOMIST.md) | Offline grammar, validation, evidence and provider boundaries |
 | [Implementation status](docs/IMPLEMENTATION_STATUS.md) | Feature-by-feature implementation and remaining limits |
 | [Test report](docs/TEST_REPORT.md) | Executed commands, actual results, benchmarks and unresolved checks |
