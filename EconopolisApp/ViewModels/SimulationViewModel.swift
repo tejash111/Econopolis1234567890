@@ -1,7 +1,12 @@
 import EconopolisCore
 import Foundation
 import Observation
-import UIKit
+
+#if canImport(UIKit)
+  import UIKit
+#else
+  import AppKit
+#endif
 
 @MainActor @Observable
 final class SimulationViewModel {
@@ -27,7 +32,9 @@ final class SimulationViewModel {
   @ObservationIgnored private var resumeOnActive = false
   @ObservationIgnored private var initialized = false
   @ObservationIgnored private var worldReady = false
-  @ObservationIgnored private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+  #if canImport(UIKit)
+    @ObservationIgnored private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+  #endif
   private enum Command {
     case initialize, play, pause, step
     case reset(Bool)
@@ -85,15 +92,18 @@ final class SimulationViewModel {
   }
   func background() {
     resumeOnActive = isPlaying || resumeOnActive
-    if backgroundTask == .invalid {
-      backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Save economic session") {
-        [weak self] in
-        Task { @MainActor in
-          self?.task?.cancel()
-          self?.endBackgroundTask()
+    #if canImport(UIKit)
+      if backgroundTask == .invalid {
+        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Save economic session")
+        {
+          [weak self] in
+          Task { @MainActor in
+            self?.task?.cancel()
+            self?.endBackgroundTask()
+          }
         }
       }
-    }
+    #endif
     submit(.save)
   }
   func inactive() {
@@ -112,10 +122,12 @@ final class SimulationViewModel {
     submit(.save)
   }
   private func endBackgroundTask() {
-    if backgroundTask != .invalid {
-      UIApplication.shared.endBackgroundTask(backgroundTask)
-      backgroundTask = .invalid
-    }
+    #if canImport(UIKit)
+      if backgroundTask != .invalid {
+        UIApplication.shared.endBackgroundTask(backgroundTask)
+        backgroundTask = .invalid
+      }
+    #endif
   }
   private func save() async throws {
     guard let store else { return }

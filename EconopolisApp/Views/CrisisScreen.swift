@@ -105,7 +105,7 @@ struct CrisisScreen: View {
           .font(.subheadline).foregroundStyle(.secondary)
         }
       }
-    }.listStyle(.insetGrouped).navigationTitle("Crisis Lab").navigationBarTitleDisplayMode(.large)
+    }.economicGroupedList().navigationTitle("Crisis Lab").navigationBarTitleDisplayMode(.large)
       .sheet(item: $crisis) { CrisisEditor(model: model, initial: $0) }
       .sheet(item: $policy) { PolicyEditor(model: model, initial: $0) }
   }

@@ -6,27 +6,43 @@ struct EntitySelection: Identifiable { let id: String }
 struct MobileRootView: View {
   @Bindable var model: SimulationViewModel
   let storageError: String?
+  @State private var market = CryptoViewModel(tokenizedStocks: true)
+  @Environment(\.colorScheme) private var scheme
+  @Environment(\.scenePhase) private var scenePhase
   @State private var tab: AppTab = .city
   @State private var selected: EntitySelection?
   var body: some View {
     Group {
       if model.update != nil {
-        TabView(selection: $tab) {
-          CityScreen(model: model, active: tab == .city, select: select, crisis: { tab = .crisis })
+        #if os(macOS)
+          VStack(spacing: 0) {
+            MacTabContent(selection: tab) { destination in
+              macDestination(destination).environment(market).tint(.blue)
+                .environment(\.colorScheme, scheme)
+                .environment(\.scenePhase, scenePhase)
+            }
+            MacBottomTabs(selection: $tab)
+          }.background(Color.appBackground)
+        #else
+          TabView(selection: $tab) {
+            CityScreen(
+              model: model, active: tab == .city, select: select, crisis: { tab = .crisis }
+            )
             .tabItem { Label("City", systemImage: "building.2.crop.circle") }.tag(AppTab.city)
-          NavigationStack { EconomyScreen(model: model, select: select) }.tabItem {
-            Label("Economy", systemImage: "chart.xyaxis.line")
-          }.tag(AppTab.economy)
-          NavigationStack { CrisisScreen(model: model) }.tabItem {
-            Label("Crisis Lab", systemImage: "waveform.path.ecg")
-          }.tag(AppTab.crisis)
-          NavigationStack { CitizensScreen(model: model, select: select) }.tabItem {
-            Label("Citizens", systemImage: "person.2")
-          }.tag(AppTab.citizens)
-          NavigationStack { EconomistScreen(model: model) }.tabItem {
-            Label("AI Economist", systemImage: "sparkles")
-          }.tag(AppTab.economist)
-        }
+            NavigationStack { EconomyScreen(model: model, select: select) }.tabItem {
+              Label("Economy", systemImage: "chart.xyaxis.line")
+            }.tag(AppTab.economy)
+            NavigationStack { CrisisScreen(model: model) }.tabItem {
+              Label("Crisis Lab", systemImage: "waveform.path.ecg")
+            }.tag(AppTab.crisis)
+            NavigationStack { CitizensScreen(model: model, select: select) }.tabItem {
+              Label("Citizens", systemImage: "person.2")
+            }.tag(AppTab.citizens)
+            NavigationStack { EconomistScreen(model: model) }.tabItem {
+              Label("AI Economist", systemImage: "sparkles")
+            }.tag(AppTab.economist)
+          }
+        #endif
       } else {
         VStack(spacing: 20) {
           Image(systemName: "building.2.crop.circle").font(.system(size: 60)).foregroundStyle(.blue)
@@ -40,9 +56,19 @@ struct MobileRootView: View {
         }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.appBackground)
       }
     }
+    .environment(market)
+    .task(
+      id: "\(scenePhase)-\(tab == .city || tab == .economy)-\(market.revision)-\(market.paused)"
+    ) {
+      guard scenePhase == .active, tab == .city || tab == .economy, !market.paused else { return }
+      await market.run()
+    }
     .onChange(of: model.preferences.focusRevision) { _, _ in
       selected = nil
       tab = .city
+    }
+    .sheet(isPresented: Binding(get: { market.configuring }, set: { market.configuring = $0 })) {
+      MarketConnectionSheet().environment(market)
     }
     .sheet(item: $selected) { selection in
       NavigationStack {
@@ -63,6 +89,18 @@ struct MobileRootView: View {
       }
     }
   }
+  #if os(macOS)
+    @ViewBuilder private func macDestination(_ destination: AppTab) -> some View {
+      switch destination {
+      case .city:
+        CityScreen(model: model, active: tab == .city, select: select, crisis: { tab = .crisis })
+      case .economy: NavigationStack { EconomyScreen(model: model, select: select) }
+      case .crisis: NavigationStack { CrisisScreen(model: model) }
+      case .citizens: NavigationStack { CitizensScreen(model: model, select: select) }
+      case .economist: NavigationStack { EconomistScreen(model: model) }
+      }
+    }
+  #endif
   private func select(_ id: String) {
     model.selectedEntity = id
     model.preferences.focusID = id

@@ -17,8 +17,21 @@ import SwiftData
 @MainActor final class SessionStore {
   let container: ModelContainer
   init(inMemory: Bool = false) throws {
-    container = try ModelContainer(
-      for: SavedEconomy.self, configurations: ModelConfiguration(isStoredInMemoryOnly: inMemory))
+    #if os(macOS)
+      let configuration: ModelConfiguration
+      if inMemory {
+        configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+      } else {
+        let folder = URL.applicationSupportDirectory.appending(
+          path: "ECONOPOLIS-Mac", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        configuration = ModelConfiguration(url: folder.appending(path: "session.store"))
+      }
+      container = try ModelContainer(for: SavedEconomy.self, configurations: configuration)
+    #else
+      container = try ModelContainer(
+        for: SavedEconomy.self, configurations: ModelConfiguration(isStoredInMemoryOnly: inMemory))
+    #endif
   }
   func load() throws -> SavedEconomy? {
     try container.mainContext.fetch(FetchDescriptor<SavedEconomy>()).first

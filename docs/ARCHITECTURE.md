@@ -30,4 +30,12 @@ Further details: [iOS UI](IOS_UI_ARCHITECTURE.md), [economic model](ECONOMIC_MOD
 
 ## Optional external market reference
 
-`EconopolisApp/MarketData` contains a read-only CoinGecko Demo URLSession actor, dedicated Keychain actor and main-actor polling model. `LiveCryptoScreen` is reached from Economy. Catalog resolution precedes batched market requests. Up to eight coins refresh once per minute, only while active; cancellation/revision checks discard replaced work. Provider timestamps determine freshness and seven-day charts display provider samples without inventing timestamps. External observations never affect core balances, seeds or branches. See LIVE_CRYPTO.md.
+`EconopolisApp/MarketData` contains a read-only CoinGecko Demo URLSession actor, dedicated Keychain actor and main-actor polling model. `MobileRootView` owns one market model shared via the environment by inline `TokenizedStocksPanel` instances on City and Economy. No separate market destination is required. The root owns foreground polling and cancels it when neither market tab is active. Catalog resolution precedes batched market requests. Six featured company xStock listings refresh in one batch once per minute, only while active; cancellation/revision checks discard replaced work. Provider timestamps determine freshness and seven-day charts display provider samples without inventing timestamps. External observations never affect core balances, seeds or branches. See LIVE_CRYPTO.md.
+
+## Native Mac companion
+
+The later user request adds `EconopolisMac`, a separate macOS 15+ target sharing the app source group and static core. `MacCompatibility.swift` adapts mobile-only styling. `MacRealityCityView` uses native RealityView and the exact same CitySceneController/CityResources used by the iPhone ARView. MacTabNavigation supplies a matching bottom tab group while caching the shared SwiftUI destinations. UIKit lifecycle/haptics/resources are conditionally compiled; AppKit semantic colors and native Mac controls are used. Mac SwiftData persistence has a dedicated Application Support path; service names provide separate device Keychain namespaces. The iPhone target remains native iOS and retains RealityKit. See MAC_APP.md.
+
+## Optional online economist
+
+`EconomistAgent` is a native actor running the exact gpt-6-luna model through a bounded Responses function-tool loop. `EconomistEvidence` builds immutable bounded projections, `EconomistConnection` owns credential access, and the existing screen cancels/revision-checks request publication. Economic commands remain offline-parser validated and confirmation-driven. It is not the official Python/TypeScript Agents SDK. See OPENAI_SPECIALISTS.md.

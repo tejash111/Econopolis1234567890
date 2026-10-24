@@ -14,25 +14,33 @@ struct CryptoQuoteRecord: Sendable {
   private(set) var error: String?
   private(set) var revision = 0
   private(set) var cooldownUntil: Date?
+  var configuring = false
   var paused = false
   private(set) var watchlist: [String]
   @ObservationIgnored private var disconnecting = false
   @ObservationIgnored private let client: any CryptoMarketDataAPI
   @ObservationIgnored private let credentials: any MarketCredentialStore
   @ObservationIgnored private let preferences: UserDefaults?
+  @ObservationIgnored private let tokenizedStocks: Bool
+  private var watchlistPreference: String {
+    tokenizedStocks ? "tokenizedStockWatchlist" : "cryptoWatchlist"
+  }
   init(
     client: any CryptoMarketDataAPI = CoinGeckoClient(),
     credentials: any MarketCredentialStore = MarketKeyStore(),
-    preferences: UserDefaults? = .standard
+    preferences: UserDefaults? = .standard,
+    tokenizedStocks: Bool = false
   ) {
     self.client = client
     self.credentials = credentials
     self.preferences = preferences
+    self.tokenizedStocks = tokenizedStocks
     var seen: Set<String> = []
     watchlist = Array(
-      (preferences?.stringArray(forKey: "cryptoWatchlist") ?? []).filter(
-        { CoinGeckoClient.validID($0) && seen.insert($0).inserted }
-      ).prefix(8))
+      (preferences?.stringArray(
+        forKey: tokenizedStocks ? "tokenizedStockWatchlist" : "cryptoWatchlist") ?? []).filter(
+          { CoinGeckoClient.validID($0) && seen.insert($0).inserted }
+        ).prefix(8))
   }
   func saveKey(_ input: String) async -> Bool {
     let key = input.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -78,7 +86,7 @@ struct CryptoQuoteRecord: Sendable {
     } else if watchlist.count < 8 {
       watchlist.append(symbol)
     }
-    preferences?.set(watchlist, forKey: "cryptoWatchlist")
+    preferences?.set(watchlist, forKey: watchlistPreference)
     revision += 1
   }
   func retry() {
@@ -107,13 +115,19 @@ struct CryptoQuoteRecord: Sendable {
         isLoading = true
         let result = try await client.coins(key: key)
         guard revision == token, !Task.isCancelled else { return }
-        symbols = result
-        let valid = Set(result.map(\.id))
+        symbols =
+          tokenizedStocks
+          ? result.filter { $0.name.localizedCaseInsensitiveContains("xStock") } : result
+        let valid = Set(symbols.map(\.id))
         watchlist = watchlist.filter { valid.contains($0) }
         if watchlist.isEmpty {
-          let preferred = ["bitcoin", "ethereum", "solana"].filter { valid.contains($0) }
-          watchlist = preferred.isEmpty ? Array(result.prefix(3).map(\.id)) : preferred
-          preferences?.set(watchlist, forKey: "cryptoWatchlist")
+          if tokenizedStocks {
+            watchlist = Self.featuredStocks(in: symbols)
+          } else {
+            let preferred = ["bitcoin", "ethereum", "solana"].filter { valid.contains($0) }
+            watchlist = preferred.isEmpty ? Array(result.prefix(3).map(\.id)) : preferred
+          }
+          preferences?.set(watchlist, forKey: watchlistPreference)
         }
         isLoading = false
       }
@@ -141,6 +155,18 @@ struct CryptoQuoteRecord: Sendable {
   }
   private func waitUntil(_ date: Date) async throws {
     while date > .now { try await Task.sleep(for: .seconds(min(3_600, date.timeIntervalSinceNow))) }
+  }
+  static func featuredStocks(in catalog: [CryptoCoin]) -> [String] {
+    let listings = catalog.filter { $0.name.localizedCaseInsensitiveContains("xStock") }
+      .sorted { $0.id < $1.id }
+    var ids: [String] = []
+    for company in ["spacex", "nvidia", "apple", "tesla", "microsoft", "amazon"] {
+      if let coin = listings.first(where: { $0.name.lowercased().hasPrefix(company + " ") }) {
+        ids.append(coin.id)
+      }
+    }
+    for coin in listings where ids.count < 6 && !ids.contains(coin.id) { ids.append(coin.id) }
+    return ids
   }
   private func refresh(
     key: String, token: Int

@@ -14,22 +14,7 @@ struct EconomyScreen: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 20) {
         WorldPicker(model: model)
-        NavigationLink {
-          LiveCryptoScreen()
-        } label: {
-          HStack(spacing: 12) {
-            Image(systemName: "chart.line.uptrend.xyaxis").font(.title3).foregroundStyle(.blue)
-            VStack(alignment: .leading, spacing: 3) {
-              Text("Live Crypto").font(.headline).foregroundStyle(.primary)
-              Text("CoinGecko crypto data · optional connection").font(.caption).foregroundStyle(
-                .secondary)
-            }
-            Spacer()
-            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(
-              .tertiary)
-          }.padding(16).background(Color.cardSurface, in: RoundedRectangle(cornerRadius: 16))
-            .contentShape(Rectangle())
-        }.buttonStyle(.plain).accessibilityIdentifier("liveCrypto")
+        TokenizedStocksPanel(compact: false)
 
         if let update = model.update {
           HStack(alignment: .firstTextBaseline) {

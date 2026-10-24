@@ -1,7 +1,13 @@
 import Foundation
 import RealityKit
-import UIKit
 import simd
+
+#if canImport(UIKit)
+  import UIKit
+#else
+  import AppKit
+  typealias UIColor = NSColor
+#endif
 
 struct CityCameraPose: Equatable, Sendable {
   var yaw: Float = 0.62
@@ -52,6 +58,7 @@ struct CityCameraPose: Equatable, Sendable {
     let base = colors[lot.district % colors.count]
     let width: Float = lot.kind == .warehouse || lot.kind == .factory ? 0.96 : 0.72
     let body = block([width, 1, width], [0, 0.5, 0], color: base, name: lot.selectionID)
+    body.components.set(InputTargetComponent())
     body.collision = CollisionComponent(shapes: [.generateBox(size: [1, 1, 1])])
     root.addChild(body)
     // Reused, geometric facades give a miniature model readable depth without costly PBR/shadows.
@@ -93,7 +100,12 @@ extension UIColor {
     var g: CGFloat = 0
     var b: CGFloat = 0
     var a: CGFloat = 0
-    getRed(&r, green: &g, blue: &b, alpha: &a)
+    #if os(macOS)
+      (usingColorSpace(.deviceRGB) ?? self).getRed(&r, green: &g, blue: &b, alpha: &a)
+    #else
+      getRed(&r, green: &g, blue: &b, alpha: &a)
+    #endif
+
     return UIColor(
       red: min(1, r * factor), green: min(1, g * factor), blue: min(1, b * factor), alpha: a)
   }

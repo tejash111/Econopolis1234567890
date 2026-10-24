@@ -150,3 +150,31 @@ xcodebuild -quiet -project Econopolis.xcodeproj -scheme Econopolis -configuratio
 ```
 
 Both commands exited **0**. Regression result: **12 market-data tests passed, zero failures/skips**, no runtime warnings in the result summary (66.060 seconds test operation). Existing RealityKit simulator shader diagnostics remain visible in app stdout. The updated app was installed and relaunched successfully (PID 48746). The prior no-key UI check remains valid; authenticated full-screen/chart interaction and physical-device checks were not newly automated. Earlier authenticated-access limitations above describe the initial implementation and are superseded by these successful API calls.
+
+## Inline stock tokens, GPT-6 Luna and native Mac — 2026-10-24
+
+Current source adds six catalog-resolved company xStock listings directly on City and Economy: SpaceX, NVIDIA, Apple, Tesla, Microsoft and Amazon. Authenticated catalog/market calls returned HTTP 200 with all six prices decoded. Provider branding is omitted from these screen labels at the user's request. A shared root-owned model avoids duplicate polling between tabs.
+
+Optional GPT-6 Luna was verified with an authenticated minimal Responses request (HTTP 200/completed) and actual iPhone UI tool-loop answer. The key was read from a dedicated Keychain account and was never printed or embedded. The native Swift implementation has six specialist roles, bounded read-only evidence tools, local confirmed-command routing and offline fallback. The official Agents SDK is not integrated because it is Python/TypeScript; see OPENAI_SPECIALISTS.md.
+
+Final targeted iOS command:
+
+```sh
+xcodebuild -quiet -project Econopolis.xcodeproj -scheme Econopolis -configuration Debug -derivedDataPath .build/ai-ios -destination 'platform=iOS Simulator,id=BD53D5D9-F086-4961-AE37-EAE90C04684E' -parallel-testing-enabled NO -only-testing:EconopolisAppTests/MarketDataTests -only-testing:EconopolisAppTests/TokenizedStockTests -only-testing:EconopolisAppTests/EconomistAgentTests -only-testing:EconopolisUITests/CombinedDemoUITests/testInlineStockConnectionPreviewDoesNotChangeCity -only-testing:EconopolisUITests/CombinedDemoUITests/testSavedLunaSpecialistAnswersWithEvidence -only-testing:EconopolisUITests/CombinedDemoUITests/testSavedTokenizedStocksOnCityAndEconomy -resultBundlePath .build/NativeMarketsLunaFinal.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+```
+
+**Exit 0: 23 passed, 0 failed, 0 skipped** (20 hosted + 3 actual UI cases), iPhone 17/iOS 27.0 arm64, result summary duration 219.452 seconds, no runtime warnings reported. Earlier focused runs: InlineStocksAcceptance 14 hosted passed; AIAndInlineChecks 7 passed; LunaAndStocksLiveUI 2 live UI cases passed. These overlap, so are not summed. Initial inline UI checks exposed parent accessibility identifiers overriding child controls and a connection sheet attached below the root. Removing the parent identifier and owning the sheet at the shared root fixed both; the final connection UI case passed. A screenshot from an early live test showed City instead of Economy; final captures explicitly show the real Economy page and all six rows.
+
+Screenshots captured and inspected: NativeUI/TokenizedStocks-City.png, TokenizedStocks-Economy.png and Luna-Briefing.png. The final generated answer uses plain text. Model prose is AI interpretation, not proof of causal/calculation correctness. Only the economy specialist has a live UI answer-quality check; other roles share the fixture-tested agent. Physical device, iOS 18 runtime and FPS/battery remain unmeasured.
+
+After extracting the existing iPhone scene code into shared CitySceneController, ran:
+
+```sh
+xcodebuild -quiet -project Econopolis.xcodeproj -scheme Econopolis -configuration Debug -derivedDataPath .build/ai-ios -destination 'platform=iOS Simulator,id=BD53D5D9-F086-4961-AE37-EAE90C04684E' -parallel-testing-enabled NO -only-testing:EconopolisAppTests/TokenizedStockTests -only-testing:EconopolisUITests/CombinedDemoUITests/testPhase2CityFiltersAndCommandPreview -resultBundlePath .build/SharedCityVerified.xcresult CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+```
+
+**Exit 0: 3 passed, 0 failed/skipped** (two selection tests + actual city orbit/pinch/filter/command-preview UI case), 67.290 seconds result duration, no runtime warnings in summary. Initial SharedCityRegression build failed due to a missing UIKit import in the extracted controller; fixed before the passing run. Core economic sources were not changed or rerun for this presentation/API work.
+
+Native Mac target/scheme EconopolisMac builds Debug and Release locally using macOS SDK 27.0, deployment 15.0, native arm64/ad-hoc signing. Shared 3D renderer builds are recorded in `.build/Mac-SharedCityFinal.log` and `.build/Mac-SharedCityRelease.log`; the Mac GUI uses native RealityView with the shared iPhone scene graph, bottom navigation and existing screens. Exact commands are in MAC_APP.md. iPhone generic Release build also succeeds independently; a Mac build is not used as iPhone validation.
+
+Mac original process launched, but its automatic quit event returned “User cancelled”; no force quit was performed. The updated app was opened separately with an in-memory test session (PID 94483), preserving the user's saved city. Desktop capture returned “could not create image from display,” so Mac screenshots, gesture/navigation interactions and pixel-level parity remain unverified here. No signed public release, notarization, App Store or TestFlight upload is claimed.

@@ -1,5 +1,10 @@
 import SwiftUI
-import UIKit
+
+#if canImport(UIKit)
+  import UIKit
+#else
+  import AppKit
+#endif
 
 struct MetricCard: View {
   let title: String
@@ -28,19 +33,24 @@ func percent(_ value: Double) -> String {
   value.formatted(.number.precision(.fractionLength(1))) + "%"
 }
 extension Color {
-  static let appBackground = Color(UIColor.systemGroupedBackground)
-  static let cardSurface = Color(UIColor.secondarySystemGroupedBackground)
+  #if canImport(UIKit)
+    static let appBackground = Color(UIColor.systemGroupedBackground)
+    static let cardSurface = Color(UIColor.secondarySystemGroupedBackground)
+  #else
+    static let appBackground = Color(nsColor: .windowBackgroundColor)
+    static let cardSurface = Color(nsColor: .controlBackgroundColor)
+  #endif
 }
 extension View {
   @ViewBuilder func economicGlass(interactive: Bool = false) -> some View {
-    if #available(iOS 26, *) {
+    if #available(iOS 26, macOS 26, *) {
       self.glassEffect(.regular.interactive(interactive), in: .rect(cornerRadius: 22))
     } else {
       self.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22))
     }
   }
   @ViewBuilder func glassGroup() -> some View {
-    if #available(iOS 26, *) { GlassEffectContainer(spacing: 12) { self } } else { self }
+    if #available(iOS 26, macOS 26, *) { GlassEffectContainer(spacing: 12) { self } } else { self }
   }
 }
 struct EmptyFinancialState: View {

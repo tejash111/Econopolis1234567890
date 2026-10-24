@@ -8,12 +8,13 @@ protocol MarketCredentialStore: Sendable {
 }
 actor MarketKeyStore: MarketCredentialStore {
   private let service: String
-  init(service: String? = nil) {
+  private let account: String
+  init(service: String? = nil, account: String = "coingecko-demo-market-data") {
+    self.account = account
     self.service =
       service ?? (Bundle.main.bundleIdentifier ?? "org.econopolis.app") + ".coingecko-demo"
       + (ProcessInfo.processInfo.arguments.contains("-econopolis-ui-testing") ? ".ui-tests" : "")
   }
-  private let account = "coingecko-demo-market-data"
   private var query: [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,

@@ -1,6 +1,11 @@
 import Observation
 import SwiftUI
-import UIKit
+
+#if canImport(UIKit)
+  import UIKit
+#else
+  import AppKit
+#endif
 
 @MainActor @Observable final class AppPreferences {
   var quality: GraphicsQuality {
@@ -26,7 +31,12 @@ import UIKit
   var colorScheme: ColorScheme? {
     appearance == "Dark" ? .dark : (appearance == "Light" ? .light : nil)
   }
-  func feedback() { if haptics { UISelectionFeedbackGenerator().selectionChanged() } }
+  func feedback() {
+    #if canImport(UIKit)
+      if haptics { UISelectionFeedbackGenerator().selectionChanged() }
+    #endif
+  }
+
   func resetCamera() {
     cameraReset += 1
     focusID = nil

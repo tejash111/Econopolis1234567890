@@ -124,7 +124,9 @@ struct SettingsScreen: View {
         Picker("Theme", selection: $model.preferences.appearance) {
           ForEach(["System", "Light", "Dark"], id: \.self) { Text($0).tag($0) }
         }
-        Toggle("Haptic feedback", isOn: $model.preferences.haptics)
+        #if os(iOS)
+          Toggle("Haptic feedback", isOn: $model.preferences.haptics)
+        #endif
       }
       Section("City rendering") {
         Picker("Graphics quality", selection: $model.preferences.quality) {
@@ -147,6 +149,7 @@ struct SettingsScreen: View {
           "CPU update wall time, not GPU FPS. Real-device frame pacing and battery use are not measured."
         ).font(.caption)
       }
+
       Section("Local session") {
         Text(model.persistenceMessage).font(.caption)
         Button("Save and pause") { model.pause() }

@@ -6,7 +6,7 @@
 
 **Explore a city. Trigger a crisis. Rewind the economy. Compare two futures.**
 
-A native iPhone financial simulation built with Swift 6, SwiftUI and RealityKit. Offline simulated economy, with an optional online stock-quote reference.
+A native iPhone financial simulation with a separate native macOS companion, built with Swift 6, SwiftUI and RealityKit. Offline simulated economy, inline live stock-token prices and optional GPT-6 Luna specialists.
 
 [iPhone app](#run-the-app) · [Features](#features) · [Live demo](#the-great-bank-run-live-demo) · [Architecture](#how-it-works) · [Test results](#builds-tests-and-measured-performance)
 
@@ -95,7 +95,7 @@ Five primary tabs keep the experience mobile-first:
 | **Economy** | Read live metrics, select historical charts, filter recorded time ranges and explore financial directories. |
 | **Crisis Lab** | Configure shocks, preview policies, run the guided demo, rewind and compare outcomes. |
 | **Citizens** | Search and filter citizens, open financial profiles and create a fictional participant. |
-| **AI Economist** | Ask supported financial questions and preview validated scenario commands offline. |
+| **AI Economist** | Offline validated scenario previews plus optional GPT-6 Luna economy, risk, policy, citizen, comparison and market specialists. |
 
 Playback includes **Play, Pause, Advance one day, speed selection, Reset same seed and Regenerate city**. Commands share one serialized owner to prevent duplicate playback loops and stale results after reset.
 
@@ -167,7 +167,7 @@ Generic timeline replay recomputes from the initial configuration and event sequ
 - Inspect bank deposits, reserves, funded lending, public obligations and modeled health; business revenue, expenses, employees, cash, credit and operational status; and district employment/activity.
 - Open posted transactions to inspect the real sender, recipient, amount, kind and simulation day.
 
-### 8. Offline AI Economist
+### 8. AI Economist — offline plus optional GPT-6 Luna
 
 The implemented assistant uses a **deterministic Swift command parser and evidence-based explanations**. It is not a general-purpose language model. It needs no API key or network connection.
 
@@ -186,6 +186,10 @@ Guarantee deposits for 30 days
 
 Queries read verified metrics and records. State-changing commands produce typed, validated plans and open an editable preview; confirmation is required before execution. Invalid or unsupported prompts do not alter the economy. Financial calculations remain the simulator's responsibility.
 
+**Optional GPT-6 Luna specialists are implemented.** Connect your own OpenAI key in **AI Economist → Connect GPT-6 Luna**, or use the saved connection on your simulator. Six modes provide economy briefings, bank/business risk explanations, policy coaching, grounded citizen stories, World A/B comparison and stock-token analysis. A bounded native Responses API tool loop reads actual evidence; AI interpretation is labeled and cannot apply policies or mutate financial balances. Offline mode remains available. Keys live only in device Keychain. Online requests use the API project's quota.
+
+The official Agents SDK is Python/TypeScript; this Swift-only app implements a native Responses client, **not an Agents SDK integration**. See [OpenAI specialists and verification](docs/OPENAI_SPECIALISTS.md) for architecture, privacy, limitations and official references.
+
 **Optional Apple Foundation Models inference is not integrated.** The working offline provider is explicitly labeled, and an `AIModelProvider` boundary supports future extensions.
 
 ### 9. Join the Economy
@@ -203,15 +207,23 @@ Joining starts a **new shared 1,001-citizen baseline** rather than inserting mon
 - Invalid saved sessions surface a recovery path instead of being silently deleted.
 - Export **World A/B metric CSV files**, **World A configuration JSON** and **comparison JSON**, with native iOS share links. Export requires a stable paused state.
 
-### 11. Live Crypto — optional CoinGecko Demo market data
+### 11. Tokenized stocks — directly on City and Economy
 
-Open **Economy → Live Crypto → Add market-data API key** and enter your **CoinGecko Demo** key. This replaces the previous Binance stock connection. The native screen shows USD prices, 24-hour changes, market capitalization, volume and seven-day provider sparklines when available. Search the full catalog by name, ticker or unique coin ID and follow up to eight coins.
+The City home screen has a horizontally scrollable stock strip. Economy displays the full list with prices, daily changes, update times and seven-day mini charts directly in the page. No separate market screen is required. Default listings are **SpaceX, NVIDIA, Apple, Tesla, Microsoft and Amazon xStock**, resolved from the live catalog and verified with authenticated API responses. These are tokenized equity observations; token prices may differ from underlying share prices.
 
-Coin IDs are resolved using `/coins/list` before requesting `/coins/markets`. One batched watchlist request refreshes every minute while the screen is active. Pause/resume, provider timestamps, stale-data labels, unavailable fields and sanitized connection errors are supported. This is periodically refreshed reference data, not a tick-by-tick trading feed.
+Both tabs share a single read-only market model and one batched refresh per minute. The home strip preserves the procedural city and simulation controls; Economy provides all six rows inline. Visible controls use neutral “Tokenized stocks” and “Market connection” labels. Market options allow pause/resume, retry and secure credential setup. Provider configuration and attribution details are documented here rather than displayed on the City/Economy surfaces, per the requested UI direction.
 
-The connection uses `https://api.coingecko.com/api/v3` and only the `x-cg-demo-api-key` HTTPS header. The key is stored in the device Keychain, never in source, URLs, UserDefaults, simulation snapshots or exports. Pro keys are not supported by this Demo configuration. Market observations do not alter the offline economic model or its deterministic branches.
+Market data uses the confirmed CoinGecko Demo configuration: `https://api.coingecko.com/api/v3`, with only the `x-cg-demo-api-key` HTTPS header. The device Keychain stores the user-supplied credential. Keys never enter source, URLs, UserDefaults, simulation snapshots or exports. No stock orders or token trades are placed. External quotes never alter the offline economic engine or deterministic branches.
 
-Authenticated Demo catalog and price requests were verified on the iPhone simulator (HTTP 200 for both endpoints). Incomplete catalog listings are skipped without blocking valid coins. See [Live Crypto setup and verification](docs/LIVE_CRYPTO.md). [Data provided by CoinGecko](https://www.coingecko.com/en/api).
+[Market setup and verification](docs/LIVE_CRYPTO.md) · [CoinGecko API](https://www.coingecko.com/en/api).
+
+## Native Mac version
+
+A separate **EconopolisMac** scheme now reuses the same financial engine, SwiftUI destinations, crisis/time travel controls, citizen inspectors, inline stock observations and optional GPT-6 Luna agent. It runs as a native macOS 15+ app, without Catalyst. Both platforms use the same procedural RealityKit scene controller, resources, live colors, heatmaps, markers and transaction flows. Mac uses native RealityView while iPhone uses non-AR ARView; Canvas remains an explicit fallback.
+
+Open `Econopolis.xcodeproj`, select **EconopolisMac → My Mac**, then press **⌘R**. The five sections reuse the iPhone screens and a matching bottom glass navigation group, with system colors/fonts. Mac-specific work is limited to platform styling/lifecycle adapters, an app icon, build settings and a separate local session path. Mac Keychain credentials are independent: enter your market/AI key in the Mac connection settings if needed.
+
+Debug and Release Mac builds and process launch were verified. Automated Mac window interaction and screenshots remain unverified because desktop capture/accessibility is unavailable in this session. See [Mac implementation and verification](docs/MAC_APP.md).
 
 ## The Great Bank Run live demo
 
@@ -236,7 +248,7 @@ Use **Restart live demo** to repeat. The preset does not hardcode a successful r
 - Verified development toolchain: **Xcode 27.1, Swift 6.4 and iOS SDK 27.1**.
 - A signing team/provisioned device only if running on a physical iPhone.
 
-The simulation/demo requires no CocoaPods, external package download, account, backend, authentication, paid API or camera permission. Optional Live Crypto requires internet and a user-supplied CoinGecko Demo API key. There is no macOS or Mac Catalyst application target. The core's macOS library platform exists only for independent host tests.
+The simulation/demo requires no CocoaPods, external package download, account, backend, authentication, paid API or camera permission. Optional Live Crypto requires internet and a user-supplied CoinGecko Demo API key. The separate `EconopolisMac` scheme builds a native macOS 15+ companion using shared code; no Mac Catalyst target is used.
 
 ### Clone and launch
 
@@ -395,7 +407,7 @@ Generated `.build` directories, local archives, raw result bundles, personal Xco
 
 The offline hackathon journey is implemented and verified on Simulator. Release and physical-device verification remain partial.
 
-- **Optional Foundation Models inference:** not integrated; the deterministic offline economist is the implemented provider.
+- **Optional Foundation Models inference:** not integrated; the deterministic offline economist and optional native GPT-6 Luna Responses agent are implemented.
 - **Physical device and compatibility checks:** real-iPhone performance, power, peak memory, large accessibility sizes/VoiceOver, landscape visual quality and an iOS 18 runtime run remain unverified.
 - **Runtime warning:** one QoS priority-inversion warning appeared during the passing touch/fallback UI test. Its source and device impact require Instruments investigation; it is not described as fixed.
 - **Long sessions:** full ledger journals grow with time. The causal journal and demo checkpoint set are bounded, but arbitrary multi-year low-memory operation is not guaranteed. Generic timeline seeking replays from initial configuration.

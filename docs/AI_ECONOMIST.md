@@ -1,3 +1,5 @@
+Current optional online GPT-6 Luna features are documented in [OPENAI_SPECIALISTS.md](OPENAI_SPECIALISTS.md). The deterministic offline behavior below remains the fallback and command-validation path.
+
 # Offline AI Economist
 
 The mandatory implementation is a deterministic native Swift intent parser and evidence-based explanation service. It has no network dependency or API key. `AIModelProvider` is the provider boundary; `OfflineEconomistProvider` is the active implementation. Optional Foundation Models inference is **not enabled** and must not be advertised as implemented.

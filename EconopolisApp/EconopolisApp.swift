@@ -1,5 +1,10 @@
 import SwiftUI
-import UIKit
+
+#if canImport(UIKit)
+  import UIKit
+#else
+  import AppKit
+#endif
 
 @main
 struct EconopolisApp: App {
@@ -19,10 +24,17 @@ struct EconopolisApp: App {
           @unknown default: coordinator.simulation.background()
           }
         }
-        .onReceive(
-          NotificationCenter.default.publisher(
-            for: UIApplication.didReceiveMemoryWarningNotification)
-        ) { _ in coordinator.simulation.memoryWarning() }
+        #if canImport(UIKit)
+          .onReceive(
+            NotificationCenter.default.publisher(
+              for: UIApplication.didReceiveMemoryWarningNotification)
+          ) { _ in coordinator.simulation.memoryWarning() }
+        #else
+          .frame(minWidth: 980, minHeight: 720)
+        #endif
     }
+    #if os(macOS)
+      .defaultSize(width: 1180, height: 840)
+    #endif
   }
 }

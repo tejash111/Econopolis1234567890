@@ -126,20 +126,80 @@ import XCTest
     }
   }
 
-  func testLiveCryptoConnectionPreviewDoesNotChangeCity() throws {
+  func testInlineStockConnectionPreviewDoesNotChangeCity() throws {
     let app = open()
+    XCTAssertTrue(app.staticTexts["Tokenized stocks"].waitForExistence(timeout: 15))
     selectNativeTab("Economy", in: app)
-    tap("liveCrypto", app: app)
-    XCTAssertTrue(app.staticTexts["Connect market data"].waitForExistence(timeout: 15))
-    capture("Live Crypto - no credentials", app: app)
-    tap("addCryptoKey", app: app)
+    XCTAssertTrue(app.staticTexts["Tokenized stocks"].waitForExistence(timeout: 10))
+    XCTAssertFalse(app.staticTexts["Live Crypto"].exists)
+    XCTAssertFalse(
+      app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'coingecko'")).firstMatch
+        .exists)
+    tap("connectStocks", app: app)
     XCTAssertTrue(app.secureTextFields["cryptoAPIKey"].waitForExistence(timeout: 10))
     XCTAssertFalse(app.buttons["Save key and connect"].isEnabled)
-    capture("Live Crypto - secure connection form", app: app)
+    capture("Inline stocks - secure connection", app: app)
     tap("Cancel", app: app)
-    XCTAssertTrue(app.staticTexts["Connect market data"].waitForExistence(timeout: 10))
     selectNativeTab("City", in: app)
     XCTAssertTrue(app.staticTexts["DAY 0"].waitForExistence(timeout: 10))
+  }
+
+  func testSavedLunaSpecialistAnswersWithEvidence() throws {
+    let app = XCUIApplication()
+    app.launchArguments = []
+    app.launch()
+    XCTAssertTrue(app.staticTexts["simulationDay"].waitForExistence(timeout: 30))
+    selectNativeTab("AI Economist", in: app)
+    guard app.staticTexts["GPT-6 Luna Economist"].waitForExistence(timeout: 10) else {
+      throw XCTSkip("Online verification requires a previously saved AI key.")
+    }
+    tap("Economy briefing", app: app)
+    let generated = app.staticTexts.matching(
+      NSPredicate(format: "label CONTAINS 'AI interpretation'")
+    ).firstMatch
+    XCTAssertTrue(generated.waitForExistence(timeout: 90))
+    capture("GPT-6 Luna - evidence-based economy briefing", app: app)
+    selectNativeTab("City", in: app)
+    XCTAssertTrue(app.staticTexts["simulationDay"].waitForExistence(timeout: 10))
+  }
+
+  /// Uses only an existing Keychain credential; no secret is supplied by the test.
+  func testSavedTokenizedStocksOnCityAndEconomy() throws {
+    let app = XCUIApplication()
+    app.launchArguments = []
+    app.launch()
+    XCTAssertTrue(app.staticTexts["simulationDay"].waitForExistence(timeout: 30))
+    XCTAssertTrue(app.staticTexts["Tokenized stocks"].waitForExistence(timeout: 10))
+    let cell = app.descendants(matching: .any).matching(identifier: "stock-nvidia-xstock")
+      .firstMatch
+    if !cell.waitForExistence(timeout: 30) && app.buttons["connectStocks"].exists {
+      throw XCTSkip("Live verification requires a previously saved market key.")
+    }
+    XCTAssertTrue(cell.waitForExistence(timeout: 30))
+    capture("Inline tokenized stocks - City live", app: app)
+    let strip = app.scrollViews["cityStockStrip"]
+    if strip.exists {
+      strip.swipeLeft()
+      capture("Inline stocks - City more companies", app: app)
+    }
+    selectNativeTab("Economy", in: app)
+    let ids = [
+      "spacex-xstocks", "nvidia-xstock", "apple-xstock", "tesla-xstock", "microsoft-xstock",
+      "amazon-xstock",
+    ]
+    for id in ids {
+      let row = app.descendants(matching: .any).matching(identifier: "stock-" + id).firstMatch
+      XCTAssertTrue(row.waitForExistence(timeout: 15))
+      let loaded = XCTNSPredicateExpectation(
+        predicate: NSPredicate(format: "label CONTAINS '$'"), object: row)
+      XCTAssertEqual(XCTWaiter.wait(for: [loaded], timeout: 30), .completed)
+    }
+    XCTAssertFalse(
+      app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'coingecko'")).firstMatch
+        .exists)
+    capture("Inline tokenized stocks - Economy live", app: app)
+    app.swipeUp()
+    capture("Inline tokenized stocks - Economy continuation", app: app)
   }
 
 }

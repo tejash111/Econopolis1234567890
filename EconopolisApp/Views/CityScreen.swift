@@ -110,6 +110,7 @@ struct CityScreen: View {
     }
     .safeAreaInset(edge: .bottom, spacing: 0) {
       VStack(spacing: 9) {
+        TokenizedStocksPanel(compact: true)
         Button {
           activity = true
         } label: {
